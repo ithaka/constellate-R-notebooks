@@ -1,4 +1,4 @@
-# constellate R Notebooks
+# Constellate R Notebooks
 
 [Constellate](https://constellate.org/) is a platform to teach, learn, and perform text analysis with scholarly and primary source content from JSTOR, Portico, and partners. Constellate enables you to easily and confidently incorporate text analysis into your curriculum. Whether you are new to the practice or a seasoned pro, our user-friendly software and educational approach will meet your educational needs.
 

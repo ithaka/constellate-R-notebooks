@@ -1,5 +1,5 @@
 ---
-title: "Introduction to text analysis with R I"
+title: "R Basics 1"
 output: 
   html_notebook:
     toc: true
@@ -12,7 +12,7 @@ Created by Zhuo Chen for [JSTOR Labs](https://labs.jstor.org/) under [Creative C
 
 For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.chen@ithaka.org)
 
-# Introduction to text analysis with R 1
+# R Basics 1
 
 **Description** : This lesson starts with a quick introduction to the basic syntax of R. It then shifts focus on data cleaning and transformation using an example on word frequency analysis.
 

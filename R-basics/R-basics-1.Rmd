@@ -1,0 +1,553 @@
+---
+title: "Introduction to text analysis with R I"
+output: 
+  html_notebook:
+    toc: true
+    theme: united
+---
+
+![](https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/CC_BY.png "Logo Title Text 1")
+
+Created by Zhuo Chen for [JSTOR Labs](https://labs.jstor.org/) under [Creative Commons CC BY License](https://creativecommons.org/licenses/by/4.0/)
+
+For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.chen@ithaka.org)
+
+# Introduction to text analysis with R 1
+
+**Description** : This lesson starts with a quick introduction to the basic syntax of R. It then shifts focus on data cleaning and transformation using an example on word frequency analysis.
+
+**Use case** : For learners (detailed explanation, not ideal for researchers)
+
+**Difficulty:** Beginner
+
+**Completion time:** 90 minutes
+
+**Knowledge required:** None
+
+**Knowledge recommended:** None
+
+**Data format:** tibble
+
+**Libraries used:** tidyverse, tidytext, SnowballC, stopwords
+
+**Research pipeline:** Data pre-processing
+
+## Why learn R?
+
+-   Reproducibility
+
+R allows researchers to publish their code so that their colleagues can comprehend what analyses have exactly been performed.
+
+-   Free and community-based
+
+Stata and IBM SPSS are costly for schools and companies while R is free. The useRs (users of R) community is constantly developing further packages to extend Rs functionality for free.
+
+-   Job prospects
+
+The demand for R has been constantly growing throughout the last couple of years.
+
+## Basic syntax in R
+
+### Basic Arithmetic
+
+You can start R programming by using it as a calculator.
+
+You can:
+
+-   add numbers (+)
+
+-   subtract numbers (-)
+
+-   multiply numbers (\*)
+
+-   divide numbers (/)
+
+-   raise a number to a power (\^)
+
+To run the code cell, press `Ctrl + Shift + Enter` if you are on a Windows machine; press `command + shift + return` if you are on a Mac.
+
+```{r}
+1 + 10
+10 - 2
+10 * pi
+10 / 2
+2 ^ 3
+```
+
+In the previous examples, each line of code that you ran is an expression. The symbols in the expressions that we use to do the different mathematical computation are the operators.
+
+Parentheses can be used to clarify the order of the operations.
+
+```{r}
+(12-2)/5
+```
+
+Certain calculations will need to use the built-in functions in R. For example, if you want to take the square root of 16, you can use the `sqrt()` function.
+
+```{r}
+sqrt(16)
+```
+
+### Variables
+
+Whenever we manipulate data, we often want to save the result value for further computation. In R programming, a variable is what we use to store information. We initialize a variable using an assignment statement, i.e. we assign a value to a variable. In the following code cell, we assign the result of 10 subtracting 2 to the variable `a` using the assignment operator `<-`.
+
+```{r}
+a <- 10 - 2
+```
+
+The value assigned to a variable can be updated. In the previous code cell, we assigned the numerical value of 8 to a. In the code cell below, we first assign 12 to `a`. Then, we do a step of further computation by adding 5 to the value stored in `a`. Before you run the code cell, can you guess the value of `a + 5`?
+
+```{r}
+a <- 12
+a + 5
+```
+
+This is a very brief introduction to R. As we dive into the example in the next section, you will be exposed to more R programming. Along the way, you will learn more R syntax.
+
+## Basic data types in R
+
+Vectors are the most basic data types in R. It is actually not an exaggeration to say that everything is a vector. In R, vectors are basically a sequence of values.
+
+### Atomic vectors
+
+We can create a vector of **homogeneous** values containing integers, doubles (double precision numbers), characters, logical values etc. This kind of homogeneous vectors are called atomic vectors in R. To create a vector, you will need to use the `c()` function, where c stands for 'combine'.
+
+First, let's create a vector of integers. The `L` after each number tells R that the number should be stored in memory as an integer.
+
+```{r}
+vec_int <- c(1L, 2L, 3L)
+typeof(vec_int)
+```
+
+Without the `L` , we will get a vector of `double-precision` numbers.
+
+```{r}
+vec_dbl <- c(1, 2, 3)
+typeof(vec_dbl)
+```
+
+You can create a vector containing a range of numbers with the beginning and ending numbers separated by a colon.
+
+```{r}
+# create a vector with by specifying a range of numbers
+c(10:20)
+```
+
+If you would want to select a number in a range with a step size of 2, use the `seq()` function.
+
+```{r}
+# create a vector containing every other integer between 10 and 20 
+c(seq(10, 20, by=2))
+```
+
+Note that if a vector only contains a single element, it is still a vector. In the following code cell, we first create a vector with a bunch of *strings (pieces of text)*. In R, we use quotes to delimit strings; then, we create a vector with just a single string. These vectors are called *character vectors.*
+
+```{r}
+vec_chr1 <- c('text', 'analysis', 'with', 'R') # create a vector containing some strings
+typeof(vec_chr1) # check the type of the value stored in vec_chr1
+
+vec_chr2 <- c('R') # containing a vector containing a single string
+typeof(vec_chr2)  # check the type of the value stored in vec_chr2
+length(vec_chr2) # check the length of vec_chr2
+```
+
+Last, let's create a vector of logical values, i.e. True and False.
+
+```{r}
+logic_vec <- c(T, F, T) # create a vector containing logical values
+typeof(logic_vec) # check the type of the vector
+```
+
+### Non-atomic vectors
+
+R also has another kind of vector — lists — which can contain a sequence of **heterogeneous** objects. The heterogeneous vectors are called non-atomic vectors in R.
+
+To create a list, we use the `list()` function. In the code cell below, you can see that the vector `lst1` contains a string which is of type `character` , a number which is of type `double` and a logical value which is of type `logical`.
+
+```{r}
+# create a list containing heterogeneous objects
+lst1 <- list(
+  "David", 
+  15, 
+  FALSE
+)
+```
+
+To access the elements in a list, we can use index numbers. To access the first element, we use the index number 1. Different from Python, in which indices start with 0, R is 1-index, which means indices in R start with 1. Note that we use double square brackets when we access elements.
+
+```{r}
+# access the first element from lst1
+lst1[[1]]
+```
+
+We can give the elements in a list names. Let's update lst1 by assigning names to the elements. Here, the first element 'David' is named 'name', the second element is named 'age', and the third element is named 'graduate'.
+
+```{r}
+# create a list and assign the elements names
+lst1 <- list(
+  name = "David", 
+  age = 15, 
+  graduate = FALSE
+)
+```
+
+When we access the elements in a list where the elements have a name, the names can be used as keys for us to retrieve the value of the element with that name.
+
+```{r}
+lst1['name'] # accessing an element by key name
+```
+
+Alternatively, you can use the `lst$key` format to access an element.
+
+```{r}
+lst1$age
+```
+
+If you would like to access a slice of a list, for example, the tenth to the twentieth element of a list, you will first create a vector containing the indices and use the vector to retrieve all elements in the designated index range.
+
+```{r}
+# create a long list
+lst2 = seq(4, 100, by=2)
+lst2
+```
+
+```{r}
+lst2[c(10:20)] # retrieve the tenth to the twentieth element from lst2
+```
+
+### Exercise 1
+
+It's your turn! You have learned how to get a slice of a list. You also have learned how to create a vector with numbers in a range with a certain step size. Suppose that you would want to retrieve every other number from the 10th to the 20th element in lst2. How do you do it?
+
+```{r}
+# retrieve every other element from the 10th to the 20th element in lst2
+
+```
+
+## The work flow in data science
+
+![](https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/workflow-data-science.png)
+
+### Text to data
+
+When it comes to text analysis, the first thing we need to do is to turn the textual data into a representation that is subject to quantitative analysis. This means, before you can start analyzing the text data (the fun part), you will often need to do a lot of text pre-processing. This includes data cleaning and transformation (`Tidy` and `Transform` in the workflow chart above) which allows you to prepare your data in a form that is ready for statistical analysis. In this section, we will use an example of word frequency analysis to show how we can clean and transform the raw data into a form that is ready for the target analysis.
+
+#### Raw data
+
+The raw data we will use is the works from the `janeaustenr` package, which contains the works of Jane Austen. Suppose we would want to study the word usage of Jane Austen. Specifically, we would like to get the top 10 most frequent words that occur across all of her books.
+
+```{r}
+install.packages('janeaustenr') # install janeaustenr package
+library(janeaustenr) # import janeaustenr package
+View(head(austen_books(), 20)) # take a look at the first 20 rows of the data
+```
+
+#### Pre-process the text of the addresses
+
+To pre-process the data and prepare it in a form that is ready for analysis, we are going to use a bunch of R libraries. Along the way, we will see what each of those libraries do for us.
+
+First of all, we will use the `tidyverse` library, which is a collection of R packages, including `dplyr`, `ggplot2`, `purrr`, `readr`, `stringr`, `tibble`, and `tidyr`, designed for data science.
+
+```{r}
+library(tidyverse) # import the tidyverse library
+austen <- austen_books() # get the books of austen
+austen <- as_tibble(austen) # for better printing
+```
+
+##### Extracting data of interest
+
+Recall that in the preview of the data, we see that the 'text' column seems to have some rows that do not have any text in it. Let's get a value from one of those cells and see what is in it.
+
+```{r}
+# access a cell which does not contain text
+austen[['text']][[2]]
+```
+
+It turns out that those cells contain empty strings. Since the rows with empty strings in the 'text' column are not useful to us, let's remove those rows. To remove them, we will use the `filter()` function.
+
+```{r}
+# filtering the tibble stored in using the condition !text==''
+# note that we use == here
+# ! means negation
+austen <- filter(austen, !text=='') 
+```
+
+##### Tokenization
+
+Given that we are going to count the word frequencies in Austen's books, we will need to break the text into words first. The `unnest_tokens()` function from the `tidytext` library can help us do that.
+
+```{r}
+library(tidytext) # import the tidytext library
+# tokenize the text in the text column
+austen_words <- unnest_tokens(austen, output=word, input=text)  
+# take a look at the first 20 rows of the resulting tibble
+View(head(austen_words, 20)) 
+```
+
+In order to understand what the `unnest_tokens()` function did for us, let's use a very simple example to demonstrate.
+
+```{r}
+# a simple example to demonstrate unnest_tokens() function
+example <- tibble(text='Hey, please show me how the unnest tokens function works.')
+example_words <- unnest_tokens(example, output=word, input=text)
+example_words
+```
+
+We can see that the `unnest_tokens()` function has removed the punctuations and lowercased the words.
+
+##### Removal of stopwords
+
+Stopwords are the words that do not convey much semantic content. For example, 'a' and 'the' occur very frequently in English. However, they do not have much meaning to themselves. Therefore, frequency of such words do not tell us much about what a document conveys. In order to focus on the content words in our analysis, we will remove the stop words from the word token list we obtained just now.
+
+In R, there is a very useful package `stopwords` that have a list of English stopwords.
+
+```{r}
+library(stopwords)
+stopwords_en <- stopwords(language = "en") # get a vector of all the English stopwords
+"a" %in% stopwords_en
+"the" %in% stopwords_en
+```
+
+To remove the stopwords, we will use the `filter()` function and give a filtering condition. The exclamation mark means negation in R.
+
+```{r}
+austen_nonstop <- filter(austen_words, !word %in% stopwords_en) # remove the stopwords
+austen_nonstop
+```
+
+We can see that `austen_words` have 725,064 rows while the `austen_nonstop` has 325,093 rows. The word tokens are reduced to less than half of the original size.
+
+##### Removal of numbers
+
+Numbers are not useful in our analysis either, so let's remove them. The `str_detect()` function can detect all the work tokens that are numerical.
+
+```{r}
+str_detect('1987', "[:digit:]")
+```
+
+We can use the `str_detect()` function to find all the numbers in the text and use the `filter()` function to remove them.
+
+```{r}
+austen_nonstop_nondigit <- filter(austen_nonstop, !str_detect(word, "[:digit:]"))
+austen_nonstop_nondigit
+```
+
+We can see that the year 1811 and the number '1' in 'chapter 1' have been removed.
+
+##### Stemming
+
+In R, the different forms of a word are considered as different. For example, 'farmer' and 'farmers' are two different strings.
+
+```{r}
+# ask R if 'farmer' is the same as 'farmers'
+'farmer' == 'farmers'
+```
+
+When we calculate word frequencies, however, we would want to treat 'farmer' and 'farmers' as the same word so that when we count them, the frequency will be the sum of their occurrences. Therefore, for the word 'farmers', we would want to strip the plural suffix 's' at the end. This step is called stemming.
+
+To do stemming, we will import the `SnowballC` library. In this library there is a function `wordStem()` that is designed to do stemming. The `mutate()` function is used to modify, create and delete columns. Here, we use it to create a new column with the stemmed words.
+
+```{r}
+library(SnowballC) # import the SnowballC library
+
+# stemming the words and create a new column with the stemmed words
+austen_nonstop_nondigit_stemmed <- mutate(
+  austen_nonstop_nondigit, 
+  word_stemmed = wordStem(
+    word, language='en'
+    )
+  ) 
+
+austen_nonstop_nondigit_stemmed # take a look at the result tibble
+```
+
+Note that the stemming is not guaranteed to be accurate. For example, 'sensibility' has been stemmed into 'sensibl', which is incorrect. For now, let's bear with it.
+
+So far, we've pre-processed the text from Jane Austen's books in four steps.
+
+-   Extracting data of interest
+-   tokenization
+-   removal of stopwords
+-   removal of numbers
+-   stemming
+
+These are very standard steps of text pre-processing. Of course, depending on your own project, you may or may not go through all of these 5 steps. You may even need to do some pre-processing particular to your own dataset, which is not covered in these 5 steps.
+
+### Exercise 2
+
+It's your turn! In this exercise, you will pre-process a `sotu.csv` file which contains the State of Union addresses from 1790. Suppose you would like to get the top 10 frequent words from the addresses from 2011 - 2020. Follow the 4 steps of pre-processing introduced above and prepare your data for the word frequency analysis.
+
+```{r}
+# get the url where the file is located
+url <- "https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/sotu.csv"
+download.file(url = url, destfile = "sotu.csv") # download data file to the current dir
+```
+
+```{r}
+sotu_raw = read.csv('sotu.csv') # read in the data
+sotu_raw <- as_tibble(sotu_raw) # for better printing 
+View(sotu_raw %>% head(10)) # alternatively, view the first 10 rows in a separate window as a table
+```
+
+```{r}
+# filter the data down to the addresses between 2011 - 2020
+
+```
+
+```{r}
+# tokenization
+
+```
+
+```{r}
+# remove stopwords
+
+```
+
+```{r}
+# remove numbers
+
+```
+
+```{r}
+# stemming
+
+```
+
+#### Get word frequencies
+
+Now that we have pre-processed the raw data from Jane Austen's books, we are ready to get the word frequencies from the books. In this section, we will do a naive raw counts of the words used by Jane Austen in her works to get an idea of her word usage.
+
+First, we group the data by book.
+
+```{r}
+# group the data by book
+austen_nonstop_nondigit_stemmed_by_book <- group_by(
+  austen_nonstop_nondigit_stemmed, book
+  ) 
+```
+
+Second, we use the `count()` function to get the word counts by book.
+
+```{r}
+# get the word count by book
+austen_word_count_by_book <- count(
+  austen_nonstop_nondigit_stemmed_by_book, 
+  word_stemmed
+  ) 
+```
+
+Next, we use the `slice_max()` function to get the top 10 frequent words by book.
+
+```{r}
+# get the top 10 frequent words by book
+austen_top10_by_book <- slice_max(
+  austen_word_count_by_book, 
+  n, 
+  n=10
+  ) 
+
+# take a look at the result
+View(austen_top10_by_book) 
+```
+
+We can plot the results by book in a horizontal bar chart. This is just a teaser. We will not cover visualization in the this intro to R series.
+
+```{r}
+# plot the top 10 frequent words by book 
+austen_top10_by_book |> 
+  ggplot()  +
+  geom_col(aes(x = n, y = reorder_within(word_stemmed, n, book))) +
+  scale_y_reordered() +
+  labs(y = "word") +
+  facet_wrap(~book, scales = "free") +
+  theme(strip.text.x = element_blank())
+```
+
+#### Exercise 3
+
+It's your turn! In the last exercise, you have pre-processed the `sotu.csv` file. Can you get the top 10 frequent words from the pre-processed data by year?
+
+```{r}
+# group data by year
+
+```
+
+```{r}
+# get word count by year
+
+```
+
+```{r}
+# get the top 10 frequent words by book
+
+```
+
+## Lesson Complete
+
+Congratulations! You have completed *R Basics 1.* There are two more lessons in *R Basics:*
+
+-   R Basics 2
+
+-   R Basics 3
+
+### Start Next Lesson: R Basics 2
+
+### Exercise Solutions
+
+#### Exercise 1 solution
+
+```{r}
+# retrieve every other element from the 10th to the 20th element in lst2
+lst2 = seq(4, 100, by=2)
+lst2_subset <- lst2[seq(10, 20, by=2)]
+lst2
+lst2_subset
+```
+
+#### Exercise 2 solution
+
+```{r}
+### pre-process sotu.csv file
+
+# download the file
+url <- "https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/sotu.csv"
+download.file(url = url, destfile = "sotu.csv")
+
+# read in the raw data
+
+sotu_raw = read.csv('sotu.csv') # read in the data
+sotu_raw <- as_tibble(sotu_raw)
+
+# extracting the data of interest
+sotu_subset <- filter(sotu_raw, 2011<=year)
+
+# pre-process the data
+library(stopwords) # import the stopwords library to get the English stopwords
+library(SnowballC) # import SnowballC library to do stemming
+stopwords_en <- stopwords(language = "en") # get the stopwords in English
+
+
+# put everything in one big code chunk
+sotu_nonstop_nondigit_stemmed <- sotu_raw %>% 
+  filter(year > 2010) %>%  # extracting the data of interest
+  unnest_tokens(output = word, input = text) %>%  # tokenization
+  filter(!word %in% stopwords_en) %>% # removal of stopwords
+  filter(!str_detect(word, "[:digit:]")) %>%  # removal of numbers
+  mutate(word_stemmed = wordStem(word, language = "en")) # stemming
+View(sotu_nonstop_nondigit_stemmed %>% head(10))
+```
+
+#### Exercise 3 solution
+
+```{r}
+### top 10 frequent words by year in SOTU between 2011 - 2020
+
+# put everything in one big chunk
+sotu_top10_words <- sotu_nonstop_nondigit_stemmed %>%
+  group_by(year) %>%
+  count(word_stemmed) %>% 
+  slice_max(n, n=10)
+View(sotu_top10_words)
+```

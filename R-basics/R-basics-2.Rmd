@@ -1,0 +1,525 @@
+---
+title: "R Basics 2"
+output: 
+  html_notebook:
+    toc: true
+    theme: united
+---
+
+![](https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/CC_BY.png "Logo Title Text 1")
+
+Created by Zhuo Chen for [JSTOR Labs](https://labs.jstor.org/) under [Creative Commons CC BY License](https://creativecommons.org/licenses/by/4.0/)
+
+For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.chen@ithaka.org)
+
+# R Basics 2
+
+**Description** : This lesson teaches how to do Key Word in Context (KWIC) analysis in R. Along the way, you will learn how to write a for loop in R, how to define a function in R, how to store the output in a file (with .csv file as an example).
+
+**Use case** : For learners (detailed explanation, not ideal for researchers)
+
+**Difficulty:** Beginner
+
+**Completion time:** 90 minutes
+
+**Knowledge required:** [R Basics 1](./r-basics-1.Rmd)
+
+**Knowledge recommended:** None
+
+**Data format:** .csv
+
+**Libraries used:** None
+
+**Research pipeline:** None
+
+## What is Key Word in Context (KWIC) analysis?
+
+Keyword in context (KWIC) is an analysis that looks at a word and its every occurrence in a text to find out its meaning and usage. KWIC analysis is inspired by Rupert Firth's observation that you will know a word's meaning, or sense, by looking at the other words around it. KWIC is often in the format as shown in the image below, with the key word placed in a central column within a "context window," a chosen number of words or characters that occur both before and after the given word.
+
+![Figure 1: The key word 'effect' in context from the [BNC-Baby corpus](http://www.natcorp.ox.ac.uk/corpus/babyinfo.html).](https://ithaka-labs.s3.amazonaws.com/static-files/streamlit/effect.png)
+
+## Do it KWIC
+
+In this section, we will walk through a simple example of KWIC analysis of *Moby Dick* step by step.
+
+### Download the data
+
+Let's download the two data files we will use to demonstrate KWIC analysis in this section.
+
+```{r}
+### get the data
+
+## create a data folder in the current dir
+cd <- getwd() # get the path to the current working directory
+mkfldr <- "data" # make a folder titled "data"
+dir.create(file.path(cd, mkfldr)) # create the data folder under the current working dir
+
+## download the file
+# get the url to the first file
+melville_url <- "https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/melville.txt" 
+
+# get the url to the second file
+austen_url <- "https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/austen.txt"
+
+# download the two files into the "data" folder
+download.file(url = melville_url, destfile = "data/melville.txt")
+download.file(url = austen_url, destfile = "data/austen.txt")
+```
+
+We can retrieve the file names in the data folder using the `dir` function in R.
+
+```{r}
+files <- dir("data")  # retrieve file names from the "data" folder
+files
+```
+
+We can make the display easier to read by giving each file an index.
+
+```{r}
+file_name <- dir("data", "\\.txt$", full.names=TRUE)
+for (i in seq_along(file_name)){
+  cat(i, file_name[i], "\n", sep=" ")
+}
+```
+
+`seq_along()` is used for generating a sequence of elements the same as that of the length of the input vector. `cat()` converts its arguments to character strings, concatenates them, separating them by the string given to the `sep` parameter, and then prints them.
+
+To make things even more compact, we can put the code chunk above into a function.
+
+```{r}
+# create a custom function to display the file names in a dir
+show_files <- function(dir_path, pattern="\\.txt$"){
+  file_name <- dir(dir_path, pattern, full.names=TRUE)
+  for (i in seq_along(file_name)){
+    cat(i, file_name[i], "\n", sep=" ")
+  }
+}
+
+show_files("data") 
+```
+
+The syntax of a function might look a little bit complicated. Let's break it down to understand each component.
+
+#### Function definition
+
+The main components of an R function are: **function name**, **function parameters**, and **function body**.
+
+The syntax of a function in R is as follows:
+
+```         
+function_name <- function(parameters){
+  function body 
+}
+```
+
+Let's use the `show_files()` function defined above as an example to understand each component.
+
+##### Function name
+
+```{r}
+### Which part is the function name?
+show_files <- function(dir_path, pattern="\\.txt$"){
+  file_name <- dir(dir_path, pattern, full.names=TRUE)
+  for (i in seq_along(file_name)){
+    cat(i, file_name[i], "\n", sep=" ")
+  }
+}
+```
+
+Yes! `show_files` is the function name. When you define a function, you would want to make the function name concise but clear and meaningful so that the user who reads your code can easily understand what exactly this function does.
+
+##### Function parameters
+
+```{r}
+### what are the function parameters?
+show_files <- function(dir_path, pattern="\\.txt$"){
+  file_name <- dir(dir_path, pattern, full.names=TRUE)
+  for (i in seq_along(file_name)){
+    cat(i, file_name[i], "\n", sep=" ")
+  }
+}
+```
+
+Within the parenthesis following the keyword `function`, we find two parameters. One is `dir_path`; another is pattern whose default value is set to "\\\\.txt\$". This means, the defined function takes two inputs. The actual values we pass to the parameters are called **arguments**.
+
+##### Function body
+
+```{r}
+### what are the function parameters?
+show_files <- function(dir_path, pattern="\\.txt$"){
+  file_name <- dir(dir_path, pattern, full.names=TRUE)
+  for (i in seq_along(file_name)){
+    cat(i, file_name[i], "\n", sep=" ")
+  }
+}
+```
+
+The function body is *a set of commands inside the curly braces* that are run every time we call the function. In other words, in the function body, we put what we want the function to do.
+
+##### Calling a function
+
+To call a function, we just put the function name and added the necessary arguments inside the parenthesis.
+
+```{r}
+### Call a function in R
+show_files <- function(dir_path, pattern="\\.txt$"){
+  file_name <- dir(dir_path, pattern, full.names=TRUE)
+  for (i in seq_along(file_name)){
+    cat(i, file_name[i], "\n", sep=" ")
+  }
+}
+
+show_files("data")
+```
+
+Note that when we call `show_files()`, we don't need to give an argument for the `pattern` parameter. This is because a default value "\\\\.txt\$" has been given to this parameter when we define the function. If we give a value to the `pattern` parameter which is different from the default value, the default value will be overriden by the value we give.
+
+#### For loop
+
+In the function body of `show_files()` function, we have a `for` loop. A `for` loop is used for iterating over a sequence. The basic syntax of a `for` loop is as follows:
+
+```         
+for (variable in sequence) {
+    expression
+}
+```
+
+Let's start with a simple example. Pay special attention to the use of parenthesis and curly braces.
+
+```{r}
+fruits <- c("apple", "pear", "banana") # create a vector
+for (x in fruits) { # iterate over the values in the defined vector
+  print(x) # print each value
+}
+```
+
+In this simple example, in the body of the `for` loop we only have a `print` statement. However, to make it more interesting, we could add a filtering condition. Suppose we would like to iterate over the fruits but only print out the fruit if it is "banana". How do we do it?
+
+```{r}
+fruits <- c("apple", "pear", "banana") # create a vector
+for (x in fruits) {# iterate over the values in the defined vector
+  if (x == "banana"){
+  print(x) # print out the fruit if it is banana
+  }
+}
+```
+
+Now, let's turn back to the `show_files()` function and focus on the `for` loop in its function body.
+
+```{r}
+show_files <- function(dir_path, pattern="\\.txt$"){
+  file_name <- dir(dir_path, pattern, full.names=TRUE)
+  for (i in seq_along(file_name)){
+    cat(i, file_name[i], "\n", sep=" ")
+  }
+}
+
+# call the function
+show_files("data")
+```
+
+We know the data folder contains two files. Therefore, when we pass "data" to the `show_files()` function, the `for` loop iterates over a sequence containing 1 and 2.
+
+With the knowledge of functions and `for` loop, we are ready to jump into the KWIC analysis!
+
+### Break up text into tokens
+
+In order to do a KWIC analysis, we will need to break up a text into tokens. In [R-basics-1](./R-basics-1.Rmd), we have learned that the `unnest()` function from the `tidytext` library can help us tokenize a text.
+
+```{r}
+### use unnest() to tokenize text
+library(tidyverse) # import library
+library(tidytext) # import library
+austen <- scan("data/austen.txt", what = 'character', sep = '\n') # read in the text 
+austen <- as_tibble(austen) # turn text into a tibble
+austen_words <- unnest_tokens(austen, strip_punct = FALSE, output=word, input=value)  # tokenization
+```
+
+### Get the index of keyword
+
+```{r}
+### Choose a word to get its context
+pos_w = which(austen_words=='anguish')
+pos_w
+```
+
+If we would like to grab the preceding and the following word of the target word, we could do so by iterating through the indices in the `position_w` vector and for each position, we get the neighboring words and concatenate them with the target word.
+
+### Set a context window to get KWIC line
+
+```{r}
+for (pos in pos_w){ # for each position in position_w
+  start = pos - 1
+  end = pos + 1
+  words <- (austen_words %>% slice(start:end))[['word']]
+  cat(words, "\n", sep=" ")
+}
+```
+
+Of course, you can enlarge the context window by adjusting the starting and ending index.
+
+```{r}
+for (pos in pos_w){ # for each position in position_w
+  start = pos - 10
+  end = pos + 10
+  words <- (austen_words %>% slice(start:end))[['word']]
+  cat(words, '\n\n', sep=' ') # concatenate the target word with the neighboring words
+}
+```
+
+### Putting everything together
+
+Now that you know how to read in the data from a txt file, break it up into tokens, identify the index of a certain keyword and extract the KWIC lines for that particular keyword with a certain context size, you can put everything together to do KWIC analysis of a text!
+
+Suppose we would like to do a KWIC analysis of Moby Dick. The keyword we are interested in is "dog". We would like to get five word on either side of the keyword. Let's write a script to do KWIC.
+
+```{r}
+### create a five-word KWIC list of "dog" in Moby Dick
+### in this exercise, we write the scripts in a step-by-step way
+melville <- scan("./data/melville.txt", what='character', sep='\n') # read in the data
+melville <- as_tibble(melville) # read data as a tibble
+melville_words <- unnest_tokens(melville, strip_punct = FALSE, output=word, input=value) # tokenization
+pos_dog <- which(melville_words=='dog') # find the indices for the word dog
+num_dash = paste(replicate(10, '-'))
+for (i in seq_along(pos_dog)){# for each position in position_dog
+  start = pos_dog[i] - 5
+  end = pos_dog[i] + 5
+  kwic_line <- paste((melville_words %>% slice(start:end))[['word']], collapse=' ')
+  kwic_line[which(kwic_line == "dog")] <- paste("[", "dog", "]", sep = "")
+  cat(num_dash, as.character(i), num_dash)
+  cat('\n')
+  cat(kwic_line, "\n", sep=' ')
+}
+```
+
+### Exercise 1
+
+It's your turn! Using what you have learned, write a function that will produce a *five-word* KWIC list for all occurrences of the word *dog* in *Sense and Sensibility*. Note that the code script we wrote for the KWIC analysis of *Mody Dick* is a step-by-step script without putting everything into a function. In this exercise, you are supposed to write a function that takes in the file `austen.txt` in the data folder and output the *five-word* KWIC list of the keyword *dog*.
+
+```{r}
+### write a script to get a five-word KWIC list of the word "dog" in Sense and Sensibility
+
+```
+
+## Do it KWICer
+
+In this section, you will learn how to abstract the code in the last section to create an interactive and reusable application to create KWIC lines for a certain file without the need to hard code the file location and key word in the function.
+
+### Elicit user input
+
+R has some built-in functions that can be used to elicit user input. Instead of giving the file path to the scan function to open a file, we can use the `file.choose()` function, which will prompt the user to navigate the file system to choose a file to open. In the console pane, enter the code in the following cell to try.
+
+```{r}
+# try the file.choose() function
+text <- scan(file.choose(), what='character', sep='\n')
+```
+
+R also has another built-in function `readline`, which is akin to the `input` function in Python. Basically, it elicits user input and stores it in a variable. Run the following code cell and enter an input in the console.
+
+```{r}
+# try the readline function
+year <- readline("What year was Moby Dick published? ")
+```
+
+After we entered 1851 in the console, the input is assigned to the variable `year`. We can confirm it by checking the value stored in `year`.
+
+```{r}
+year
+```
+
+Note that the user input is stored as a string. We can use the `typeof()` function to confirm it.
+
+```{r}
+typeof(year) # check the type of the value stored in the variable year
+```
+
+### Rewrite the function from previous section
+
+Now, let's rewrite the KWIC function we created in the last section to make it accept a file, a keyword, a context size from the user and output KWIC lines of the given keyword with the given context window size from the given file.
+
+```{r}
+# abstract the function from previous section to accept user input
+kwicer <- function(dir_path){ # define a function called kwicer
+file_id <- as.numeric(readline(show_files(dir_path))) # elicit file choice from user and turn it to integer
+keyword <- readline("Enter a keyword: ") # elicit a keyword from user
+context <- as.numeric(readline("What is the context size? ")) # elicit a context size from user
+file_path <- file.path(dir_path, dir(dir_path)[file_id]) # set the file path based on user choices from above
+file <- scan(file_path, what="character", sep="\n") # read in the data from file
+file <- as_tibble(file) # turn text into a tibble
+file_words <- unnest_tokens(file, strip_punct = FALSE, output=word, input=value)  #tokenization
+pos_keyword <- which(file_words == keyword) # find the indices of the keyword
+for (i in seq_along(pos_keyword)){
+  start <- pos_keyword[i] - context 
+  if (start < 1){
+    start <- 1
+  } # get the index of the starting word in a kwic line
+  end <- pos_keyword[i] + context
+  if (end >= nrow(file_words)){
+    end <- nrow(file_words)
+  } # get the index of the ending word in a kwic line
+  kwic_line <- paste((file_words %>% slice(start:end))[['word']], collapse=" ")
+  kwic_line[which(kwic_line == keyword)] <- paste("[", keyword, "]", sep = "") # highlight the keyword using square brackets
+  num_dash = paste(replicate(10, '-')) 
+  cat(num_dash, i, num_dash)
+  cat("\n")
+  cat(kwic_line, "\n")
+}
+}
+
+# call the function to see how it operates
+kwicer("data")
+```
+
+## Write the output into a file
+
+Note that the KWIC lines we get as output from the previous sections are not stored in any form. This means, if you sign out of the current session and come back later, your output KWIC lines are lost. However, in real life, after processing files and obtaining some kind of output, we would want to store the output in a file to continue working in the future.
+
+In this section, a sample code chunk that demonstrates how to write the KWIC lines we get from a file into a .csv file is given. A .csv file is used to store tabular data that can be opened by Excel, Google Sheets or other software that can read tabular data. We will learn more in the next lesson, but feel free to play with the code and try exercise 2!
+
+```{r}
+# abstract the function from previous section to accept user input
+kwicer <- function(dir_path){ # define a function called kwicer
+file_id <- as.numeric(readline(show_files(dir_path))) # elicit file choice from user and turn it to integer
+keyword <- readline("Enter a keyword: ") # elicit a keyword from user
+context <- as.numeric(readline("What is the context size? ")) # elicit a context size from user
+file_path <- file.path(dir_path, dir(dir_path)[file_id]) # set the file path based on user choices from above
+file <- scan(file_path, what="character", sep="\n") # read in the data from file
+file <- as_tibble(file) # turn text into a tibble
+file_words <- unnest_tokens(file, strip_punct = FALSE, output=word, input=value)  #tokenization
+pos_keyword <- which(file_words == keyword) # find the indices of the keyword
+output_df <- data.frame(
+  matrix(nrow=length(pos_keyword), ncol=3) # create an empty dataframe
+)
+colnames(output_df) <- c("position", "keyword", "kwic")
+for (i in seq_along(pos_keyword)){
+  start <- pos_keyword[i] - context 
+  if (start < 1){
+    start <- 1
+  } # get the index of the starting word in a kwic line
+  end <- pos_keyword[i] + context
+  if (end >= nrow(file_words)){
+    end <- nrow(file_words)
+  } # get the index of the ending word in a kwic line
+  kwic_line <- paste((file_words %>% slice(start:end))[['word']], collapse=" ")
+  kwic_line[which(kwic_line == keyword)] <- paste("[", keyword, "]", sep = "") # highlight the keyword using square brackets
+  df_row <- cbind(pos_keyword[i], keyword, kwic_line)
+  output_df[i,] <- df_row
+}
+  out_file <- paste(
+    keyword, "kwic", context, "words", "in", 
+    "context", dir(dir_path)[file_id],"csv", sep=".")
+  write.csv(output_df, file.path("data", out_file))
+return(output_df)
+}
+
+# call the function to see how it operates
+kwicer("data")
+```
+
+### Exercise 2
+
+It's your turn! Using what you have learned about how to elicit user input, could you revise the code chunk above such that the function will ask the user if they would like to write the output into a .csv file? If the user gives a positive answer, then write the output into a csv file; otherwise, don't do so.
+
+```{r}
+### revise the code in the previous cell such that 
+### the function will store the output in a csv file if user asks it to do so
+### and will not do so otherwise
+
+```
+
+## Lesson Complete
+
+Congratulations! You have completed *R Basics 2.* There are one more lesson in *R Basics:*
+
+-   R Basics 3
+
+### Start Next Lesson: R basics 3
+
+## Exercise Solutions
+
+### Exercise 1 solution
+
+```{r}
+### create a five-word KWIC list of dog in Sense and Sensibility
+### in this exercise, we write the process into a function which
+### takes in a txt file and output a KWIC list
+sense_kwic <- function(f_loc){
+  sense <- scan("./data/austen.txt", what='character', sep='\n') # read in the data
+  sense <- as_tibble(austen) # read data as a tibble
+  sense_words <- unnest_tokens(sense, strip_punct = FALSE, output=word, input=value) # tokenization
+  pos_dog <- which(sense_words=='dog') # find the indices for the word dog
+  num_dash = paste(replicate(10, '-'))
+  for (i in seq_along(pos_dog)){# for each position in position_dog
+    start = pos_dog[i] - 5
+    end = pos_dog[i] + 5
+    kwic_line <- paste((melville_words %>% slice(start:end))[['word']], collapse=' ')
+    kwic_line[which(kwic_line == "dog")] <- paste("[", "dog", "]", sep = "")
+    cat(num_dash, as.character(i), num_dash)
+    cat('\n')
+    cat(kwic_line, "\n", sep=' ')
+  }
+}
+
+# call the funcntion
+sense_kwic('./data/austen.txt')
+```
+
+### Exercise 2 solution
+
+```{r}
+### revise the code in the previous cell such that 
+### the function will store the output in a csv file if user asks it to do so
+### and will not do so otherwise
+# abstract the function from previous section to accept user input
+kwicer <- function(dir_path){ # define a function called kwicer
+file_id <- as.numeric(readline(show_files(dir_path))) # elicit file choice from user and turn it to integer
+keyword <- readline("Enter a keyword: ") # elicit a keyword from user
+context <- as.numeric(readline("What is the context size? ")) # elicit a context size from user
+file_path <- file.path(dir_path, dir(dir_path)[file_id]) # set the file path based on user choices from above
+file <- scan(file_path, what="character", sep="\n") # read in the data from file
+file <- as_tibble(file) # turn text into a tibble
+file_words <- unnest_tokens(file, strip_punct = FALSE, output=word, input=value)  #tokenization
+pos_keyword <- which(file_words == keyword) # find the indices of the keyword
+output_df <- data.frame(
+  matrix(nrow=length(pos_keyword), ncol=3) # create an empty dataframe
+)
+colnames(output_df) <- c("position", "keyword", "kwic")
+for (i in seq_along(pos_keyword)){
+  start <- pos_keyword[i] - context 
+  if (start < 1){
+    start <- 1
+  } # get the index of the starting word in a kwic line
+  end <- pos_keyword[i] + context
+  if (end >= nrow(file_words)){
+    end <- nrow(file_words)
+  } # get the index of the ending word in a kwic line
+  kwic_line <- paste((file_words %>% slice(start:end))[['word']], collapse=" ")
+  kwic_line[which(kwic_line == keyword)] <- paste("[", keyword, "]", sep = "") # highlight the keyword using square brackets
+  df_row <- cbind(pos_keyword[i], keyword, kwic_line)
+  output_df[i,] <- df_row
+}
+y_or_n <- readline("Would you like to save the result to a .csv file? Enter y/n \n")
+while (TRUE){
+  if ((y_or_n) != "y" & (y_or_n)!= "n"){
+    y_or_n <- readline("Please enter y/n \n")
+    next
+  }
+  else{break}
+}
+if(y_or_n == "y"){
+    out_file <- paste(
+      keyword, "kwic",
+      context, "words", 
+      "in", "context", dir(dir_path)[file_id],
+      "csv",
+      sep="."
+    )
+write.csv(output_df, file.path("data", out_file))
+}
+return(output_df)
+}
+
+
+# call the function to see how it operates
+kwicer("data")
+```

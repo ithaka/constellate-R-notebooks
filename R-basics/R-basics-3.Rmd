@@ -1,0 +1,478 @@
+---
+title: "R Basics 3"
+output: 
+  html_notebook:
+    toc: true
+    theme: united
+---
+
+![](https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/CC_BY.png "Logo Title Text 1")
+
+Created by Zhuo Chen for [JSTOR Labs](https://labs.jstor.org/) under [Creative Commons CC BY License](https://creativecommons.org/licenses/by/4.0/)
+
+For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.chen@ithaka.org)
+
+# R Basics 3
+
+**Description** : This lesson teaches how to do sentiment analysis in R. Along the way, you will learn regular expressions, tibble transformation, and simple plotting with ggplot.
+
+**Use case** : For learners (detailed explanation, not ideal for researchers)
+
+**Difficulty:** Beginner
+
+**Completion time:** 90 minutes
+
+**Knowledge required:** [R Basics 1](./r-basics-1.Rmd), [R Basics 2](./R-basics-2.Rmd)
+
+**Knowledge recommended:** [What is sentiment analysis?](https://constellate.org/tutorials/key-concept/sentiment-analysis)
+
+**Data format:** tibble
+
+**Libraries used:** None
+
+**Research pipeline:** None
+
+## What is sentiment analysis?
+
+Sentiment analysis is the field of study that analyzes people's sentiments, opinions, and emotions expressed in text (Liu 2020). For example, businesses may leverage sentiment analysis to investigate consumer opinions after a product is launched. The term *sentiment analysis* is considered first appearing in Nasukawa and Yi (2003), but the research on sentiment and opinion started even earlier (Wiebe 2000, a.o.). When humans approach a text, we can use our understanding of the sentiment of words to infer if a chunk of text is positive or negative. This approach of using the component lexical words to infer the sentiment of a text is called lexicon-based sentiment analysis or rule-based sentiment analysis.
+
+## How to do sentiment analysis in R?
+
+In this lesson, we will demonstrate how to do lexicon-based sentiment analysis in R.
+
+### Lexicon-based sentiment analysis
+
+In [R-basics-1](./R-basics-1.Rmd), you already used the `tidytext` package. In this packages, we can find several sentiment lexicons.
+
+-   `AFINN` from [Finn Årup Nielsen](http://www2.imm.dtu.dk/pubdb/views/publication_details.php?id=6010),
+
+-   `bing` from [Bing Liu and collaborators](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html)
+
+-   `nrc` from [Saif Mohammad and Peter Turney](http://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm)
+
+All three lexicons are based on single words. This means, each word in the lexicon is assigned a sentiment score, as is in the `AFINN` lexicon, or a binary label of positive/negative, as is in the `bing` lexicon or an emotion category label, as is in `nrc` lexicon. In this section, we are going to use the `bing` lexicon as an example, since it does not require us to download any other packages (while the other two lexicons require us to download the `textdata` package).
+
+```{r}
+### take a look at the bing lexicon
+library(tidytext)
+bing_lex <- get_sentiments("bing")
+bing_lex
+```
+
+As you can see, each word in the lexicon is assigned to positive or negative. There is no "neutral" category in the `bing` lexicon, as confirmed by the next code cell.
+
+```{r}
+# get the unique category label in the bing lexicon
+unique(bing_lex$sentiment)
+```
+
+Note that not every English word is in the `bing` lexicon because a lot of English words are quite neutral. There are also some domain-specific sentiment lexicons available, and they are supposed to be used to analyze texts from a specific content area.
+
+There are many questions to be considered when choosing a lexicon. For example, some sentiment lexicons were constructed via crowdsourcing through Amazon Mechanical Turk. Other lexicons were constructed by the labor the authors, and were validated using restaurant/movie reviews or Twitter data. Therefore, ideally we would want to apply a sentiment lexicon to texts which are of very similar styles to the texts the lexicon was validated on.
+
+### How to calculate the sentiment score of a text?
+
+One way to analyze the sentiment of a text is to take the text as a combination of the individual words in it, and the sentiment content of the whole text is the sum of the sentiment content of the individual words. However, for a long text, we would want to **chunk it up into sentences or paragraphs** because a text of a large size will often have the positive and negative sentiment averaged out to close to zero.
+
+In this section, we will use Jane Austen's books in the `janeaustenr` library to demonstrate how we can get a sense of the sentiment change over the course of a book.
+
+#### Prepare the data
+
+```{r}
+### Get the data 
+library(janeaustenr) # get the austen books from this lib
+library(stringr) # a lib working with strings in R
+original_books <- austen_books()
+original_books %>% head(10) %>% view()
+```
+
+`%\>%` is called the pipe operator. It is from the dylpr package and is used to make the function call in a chain so that it is easier and more intuitive to read.
+
+For example, in the following line of code, we can actually break the operations down into several steps.
+
+```         
+original_books %>% head(10) %>% view() 
+```
+
+First, we use the `head()` function to get the first ten rows of the tibble stored in the variable original_books.
+
+```{r}
+# get the first ten rows of the tibble stored in original_books
+original_books %>% head(10)
+```
+
+Essentially, what is before the pipe operator is an input to the function after the pipe operator. Therefore, if we rewrite the command into the one in the code cell below, we will get the same result.
+
+```{r}
+head(original_books, 10) 
+```
+
+Okay, back from the excursion. Now that we understand how the pipe operator works, we can chain a series of commands to make code more compact instead of writing one operation in a line at one time.
+
+```{r}
+# create 2 new columns "linenumber" and "chapter" 
+# linenumber is the line number of the text in tibble
+# chapter is binary, indicating if text is a chapter heading or not
+original_books <- austen_books() %>% 
+  group_by(book) %>% # group by book col
+  mutate(
+    linenumber = row_number(),# create a col with the line num of text
+    chapter = as.numeric(
+      str_detect(
+        text, 
+        regex("^chapter [\\divxlc]",
+        ignore_case = TRUE
+        )
+        )
+      ) # create a col indicating if text is chapter num 
+    ) %>%  
+  ungroup() %>% # combine groups back into a tibble w/o groups
+  unnest_tokens(output=word, input=text) # tokenization
+```
+
+Let's spend some time understanding the `mutate()` function. Basically, the `mutate()` is used to create, modify or delete columns in a tibble. Here, since the two columns `linenumber` and `chapter` are not existing in the input tibble, `mutate()` is used to create the two columns. It is easy to understand that the row number is basically the line number, but the function used to create the chapter column looks a little complicated. Let's break it down.
+
+##### The str_detect() function
+
+```{r}
+### what does str_detect() do?
+str_detect("Chapter 1", regex("^chapter ")) # check if the input string starts with "chapter "
+```
+
+In the regex pattern, `^chapter`, the caret at the beginning means the start of a string. Recall that white space is also a character. Therefore, we know that strings that satisfy this pattern all start with "chapter ". Note that because the input string has capitalized C yet the regex pattern has lower case c in it, the input string does not satisfy the pattern.
+
+##### Regular Expressions
+
+```{r}
+### a more complicated regex pattern
+str_detect(
+        "chapter 1", 
+        regex("^chapter [\\divxlc]")
+        )
+```
+
+In the regex pattern, we see a bunch of characters in square brackets. All characters in square brackets are connected with the logical operator `OR`. This means, any string that matches the regex pattern will start with "chapter " and and continue with any of the characters in the square brackets, be it `\\d` which is used to match any digit character, which includes the numbers 0 through 9, or `i` or `v` or `x` or `l` or `c`. This pattern can be used to capture any chapter number using the Arabic number like `chapter 1` or the roman number like `chapter i`.
+
+```{r}
+### the ignore_case parameter
+str_detect(
+        "CHAPTER 1", 
+        regex("^chapter [\\divxlc]",
+        ignore_case = TRUE
+        )
+      )
+```
+
+The `ignore_case` parameter holds a binary value. It specifies if we would want to ignore the case of the input string when checking if it matches the regex pattern. Here, we can see that `CHAPTER 1` with all caps letters still matches the given pattern, when we set `ignore_case` to TRUE.
+
+##### The as.numeric() function
+
+```{r}
+### as.numeric()
+as.numeric(TRUE)
+```
+
+The `as.numeric()` function can turn a boolean value of TRUE to 1 and FALSE to 0.
+
+#### Back to the data preparation
+
+```{r}
+# create 2 new columns "linenumber" and "chapter" 
+# linenumber is the line number of the text in tibble
+# chapter is binary, indicating if text is a chapter heading or not
+original_books <- austen_books() %>% 
+  group_by(book) %>% # group by book col
+  mutate(
+    linenumber = row_number(),# create a col with the line num of text
+    chapter = as.numeric(
+      str_detect(
+        text, 
+        regex("^chapter [\\divxlc]",
+        ignore_case = TRUE
+        )
+        )
+      ) # create a col indicating if text is chapter num 
+    ) %>%  
+  ungroup() %>% # combine groups back into a tibble w/o groups
+  unnest_tokens(output=word, input=text) # tokenization
+```
+
+Now, let's go back to data preparation. We should be able to understand everything now.
+
+### Lexicon-based sentiment analysis
+
+Now that we have the initial raw text processed into a tibble with each word from the text in a row, we can start to do the sentiment analysis.
+
+Suppose for each of the 6 books in the `janeaustenr` library, we would like to do the following: using 80 lines of text as a chunk, we will calculate a net sentiment — positive/negative — for each chunk and then plot the sentiment change over the narrative in each book.
+
+```{r}
+### sentiment change over the narrative by book
+jane_austen_sentiment <- original_books %>%
+  inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
+  count(book, index = linenumber %/% 80, sentiment) %>% # 
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+```
+
+Again, there is a lot going on in the code chunk above. Let's break it down and understand it step by step.
+
+#### Label the sentiment of all words from books that are also in the Bing lexicon
+
+```{r}
+# get all words from books and label them as positive or negative using the "bing" lexicon
+jane_austen_sentiment <- original_books %>%
+  inner_join(get_sentiments("bing"), relationship = "many-to-many")
+jane_austen_sentiment
+```
+
+An `inner_join()` only keeps observations from `x` that have a matching key in `y`. This means, when we do sentiment analysis of the books, we only use the words from the books that are also in the "bing" lexicon.
+
+#### Exercise 1
+
+You might be wondering about the parameter relationship and why we set the value to "many-to-many".
+
+Run the following code chunk without setting the value for the parameter, what do you get?
+
+```{r}
+### see what message we get if we do not set the value for relationship
+jane_austen_sentiment <- original_books %>%
+  inner_join(get_sentiments("bing"))
+janeaustenr_sentiment
+```
+
+Now, in the following code chunk, can you find if the "bing" lexicon has duplicates in its vocab? Note that we haven't taught how to find duplicates in a tibble yet, but that's because coding, oftentimes, means you will not know everything and you have to learn how to search for relevant information by yourself. Therefore, choose whatever way you prefer when searching (Google or ChatGPT), and find the answer by yourself!
+
+```{r}
+### find if bing lexicon has duplicates in its lexicon
+
+```
+
+#### Count pos/neg labels in chunks for each book
+
+For each book, we will break it up into chunks of 80 lines. For each chunk, we are going to count the number of the positive and negative words, with which we can then plot the sentiment change throughout the book.
+
+```{r}
+### count by book and then by 80-line chunks
+jane_austen_sentiment <- original_books %>%
+  inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
+  count(book, index = linenumber %/% 80, sentiment) 
+jane_austen_sentiment
+```
+
+`count()` quickly counts the unique values of one or more variables: `tibble %>% count(a, b)` is roughly equivalent to `tibble %>% group_by(a, b) %>% summarize(n = n())`
+
+```{r}
+### a simple example of count
+ex_tibble <- as_tibble(list(year=c(2020, 2020, 2021, 2021, 2021),
+               label=c("pos", "neg", "pos", "pos", "neg")
+               )
+              )
+ex_tibble %>% count(year, label)
+```
+
+The double percentage sign %% means modulus in R. The result of the %% operator is the remainder of a division.
+
+```{r}
+# a simple example of the %% operator
+# 5 = 2 * 2 + 1
+5 %% 2
+```
+
+#### Transform the tibble into a format ready for plotting
+
+```{r}
+### count by book and then by 80-line chunks
+jane_austen_sentiment <- original_books %>%
+  inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>%
+  mutate(sentiment = positive - negative)
+```
+
+##### The pivot_wider() function
+
+`pivot_wider()` "widens" data, increasing the number of columns and decreasing the number of rows. The names_from parameter specifies from which variable you would like to draw new column names. The values_from parameter specifies from which variable you would like to get the values for the new columns. The values_fill parameter specifies if not all rows in the new columns have a value that you can draw from the specified variable in values_from, what value you would like to fill in.
+
+```{r}
+### let's start with a simple example
+ex_tibble <- as_tibble(list(year=c(2020, 2020, 2021, 2021, 2021, 2022),
+               label=c("pos", "neg", "pos", "pos", "neg", "pos") # note year 2022 only has pos
+               )
+              )
+ex_tibble %>% 
+  count(year, label) %>%
+  pivot_wider(names_from = label, values_from = n, values_fill = 0) %>%
+  view()
+```
+
+Back to the Jane Austen books. We should be able to understand everything in the code chunk below now.
+
+```{r}
+### transform the tibble with pos and neg as two new columns
+jane_austen_sentiment <- original_books %>%
+  inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0)
+jane_austen_sentiment
+```
+
+##### Last step of transformation before plotting
+
+```{r}
+# create a new column named "sentiment" which stores the difference in counts of pos and neg
+jane_austen_sentiment <- original_books %>%
+  inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>%
+  mutate(sentiment = positive - negative)
+jane_austen_sentiment
+```
+
+##### Plot the sentiment change in each book
+
+With the tibble we get from last section, we are ready to plot the sentiment change throughout each book. The value of a bar stands for how much the positive sentiment surpasses or falls behind the negative sentiment.
+
+```{r}
+### plot sentiment change in each book
+ggplot(jane_austen_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) + # plot a bar chart, no legend
+  facet_wrap(facets=jane_austen_sentiment$book, ncol = 2, scales = "free_x")
+```
+
+#### Exercise 2
+
+Can you get the tibble original_books and use the bing lexicon to get which 10 positive words occur the most frequently and which 10 negative words occur the most frequently across all 6 books in the janeaustenr library? Can you use ggplot to plot a bar chart to display the 10 most frequent positive and negative words?
+
+```{r}
+### get the 10 most frequent positive and negative words from Jane Austen's novels
+
+```
+
+```{r}
+### plot a bar chart displaying the results from above
+
+```
+
+### VADER as another tool for lexicon-based sentiment analysis
+
+VADER (Valence Aware Dictionary and sEntiment Reasoner) is a rule-based algorithm used to calculate the sentiment score of texts. VADER relies on a specialized lexicon of words, phrases, and emojis. Each token in the lexicon is assigned a "mean-sentiment rating" between -4 (extremely negative) to 4 (extremely positive). When calculating the sentiment score of a text, VADER will assign it a "normalized, weighted composite score" based on summing the valence scores of each word in the lexicon (with some adjustments based on word order and other rules).
+
+In the following, we will use the data from a research paper by Almond et al. (2022) on how the funding source might influence the sentiment towards fossil energies in academic energy centre text output to calculate the sentiment score of Stanford University energy centre's reports.
+
+### Data
+
+The authors collected 1,706 reports published between January 2009 and December 2020 from 26 universities, with a total of 1,168,194 sentences. In this section, we will only work on the data from the Stanford University.
+
+```{r}
+### download the data, filter the data, read in the data and preview the data
+# download the file
+url <- "https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/energy_report.csv"
+download.file(url = url, destfile = "energy_report.csv")
+
+# read in the raw data
+
+energy = read.csv('energy_report.csv') # read in the data
+energy <- as_tibble(energy)
+
+# filter down to Stanford
+stanford <- filter(energy, school == "Stanford_Natural Gas Initiative")
+
+# preview the first 10 rows
+view(head(stanford, 10))
+```
+
+### Further filtering
+
+Suppose we would like to focus on the reports which are categorized as "fossil report" — reports that are about fossil fuels. For these reports, we would further focus on the sentences which are categorized as "fossil sentence" — sentences that are talking about fossil fuels.
+
+```{r}
+### filter down to fossil reports and fossil sentences
+fossil <- energy %>% 
+  filter(fossilreport == 1 & fossilsentence == 1)
+fossil
+```
+
+As the following code chunk shows, there are 167 reports in total by Stanford in this dataset. Let's select 1 from the 167 reports for the purpose of demonstration
+
+```{r}
+# number of reports in the dataset
+length(unique(fossil$report_name))
+```
+
+```{r}
+### filter down to 1 report
+reports <- fossil %>% 
+  filter(report_name == "201609.pdf"
+         )
+reports
+```
+
+### Calculate sentiment score
+
+For each fossil sentence, we then use the VADER package to calculate a sentiment score.
+
+```{r}
+### calculate sentiment score for each fossil sentence and store them in a new column
+
+# import the vader library
+library("vader")
+
+# calculate vader scores
+score = c()
+for (text in reports$line_text){
+  score <- c(score, get_vader(text)[["compound"]])
+}
+
+# bind the scores to the reports tibble
+reports_score <- cbind(reports, score)
+reports_score
+```
+
+## Lesson Complete
+
+Congratulations! You've completed the *R Basics* series.
+
+Considering the amount of material in *R Basics 1-3* there's a good chance you won't retain it all. That's okay. Programmers often need to look up things to accomplish a task they haven't done in a while, particularly if it is in a language they don't often use. When you're working on a project, you can always come back to these lessons as reference materials. In other words, you've learned an incredible amount, so don't be surprised if it doesn't all stick at first.
+
+If you want to help yourself retain what you've learned, the best way is to start putting it into practice. Try your hand at creating some small R projects and recognize that the things you've learned here will cement with time and practice. When you do forget a particular thing—as we all do—a quick web search often turns up some useful examples.
+
+## Exercise Solutions
+
+### Exercise 1 solution
+
+```{r}
+### find if thebing lexicon has duplicates
+TRUE %in% duplicated(get_sentiments("bing")$word)
+```
+
+### Exercise 2 solution
+
+```{r}
+### get the 10 most postive and negative words from Jane Austen's novels
+### and plot a bar chart displaying the words
+jausten_bing_word <- original_books %>%
+  inner_join(get_sentiments("bing"), 
+             relationship = "many-to-many"
+             ) # get all words from the novels and in bing lexicon 
+pos_words <- filter(jausten_bing_word, sentiment == "positive")
+neg_words <- filter(jausten_bing_word, sentiment == "negative")
+top_ten_pos_words <- pos_words %>%
+  count(word, sentiment, sort = TRUE) %>%
+  head(10) # get top 10 frequent pos words
+top_ten_neg_words <- neg_words %>%
+  count(word, sentiment, sort = TRUE) %>%
+  head(10) # get top 10 frequent neg words
+top_10_words <- rbind(top_ten_neg_words, top_ten_pos_words) %>% #combine two top 10 words tibble
+  mutate(word = reorder(word, n)) # order the words by their freq
+
+### plot a bar chart displaying the top 10 pos and neg words
+ggplot(top_10_words, aes(n, word, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(facets="sentiment", scales = "free_y") +
+  labs(x = "Contribution to sentiment",
+       y = NULL)
+```
+
+## References
+
+Silge, J., & Robinson, D. (2017). *Text mining with R: A tidy approach*. O'Reilly Media.

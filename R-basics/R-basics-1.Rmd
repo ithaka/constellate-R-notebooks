@@ -492,7 +492,7 @@ Congratulations! You have completed *R Basics 1.* There are two more lessons in 
 
 -   R Basics 3
 
-### Start Next Lesson: R Basics 2
+### Start Next Lesson: [R Basics 2](./R-basics-2.Rmd)
 
 ### Exercise Solutions
 
@@ -551,3 +551,9 @@ sotu_top10_words <- sotu_nonstop_nondigit_stemmed %>%
   slice_max(n, n=10)
 View(sotu_top10_words)
 ```
+
+## References
+
+Lenner, F. (2023). *Text Mining for Social Scientists*. <https://bookdown.org/f_lennert/text-mining-book/>
+
+Soltoff, B. (2022). Computing for information Science. <https://info5940.infosci.cornell.edu>

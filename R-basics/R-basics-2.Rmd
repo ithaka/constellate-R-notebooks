@@ -433,7 +433,7 @@ Congratulations! You have completed *R Basics 2.* There are one more lesson in *
 
 -   R Basics 3
 
-### Start Next Lesson: R basics 3
+### Start Next Lesson: [R basics 3](./R-basics-3.Rmd)
 
 ## Exercise Solutions
 
@@ -523,3 +523,7 @@ return(output_df)
 # call the function to see how it operates
 kwicer("data")
 ```
+
+## References
+
+Jockers, M. L., & Thalken, R. (2020). *Text analysis with R*. Springer International Publishing.

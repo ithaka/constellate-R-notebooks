@@ -102,7 +102,7 @@ To run a code chunk, you also have a couple options.
 
 2.  Click on the right-facing green triangle on the top right corner of the code chunk to run the current chunk. You also another option to run all code chunks above the current one. ![An animation showing how to run a code chunk](https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/run-current-code-chunk-green-triangle.gif)
 
-3.  If you are on a Windows machine, press **Ctrl + Enter**; if you are on a Mac, press **command + return.** Note that if your code chunk has multiple lines of code, you will need to select all of the lines you would like to run and then press **Ctrl + Enter** or **command + return.**
+3.  If you are on a Windows machine, press **Ctrl + Enter**; if you are on a Mac, press **command + return.** Note that if your code chunk has multiple lines of code, you will need to select all of the lines you would like to run and then press **Ctrl + Enter** or **command + return.** If you would like to run the entire code chunk with multiple lines of code, you can press **Ctrl + Shift + Enter** if you are on a Windows machine or press **command + shift + return** if you are on a Mac.
 
 ## Modify the content
 

@@ -96,7 +96,7 @@ Whenever we manipulate data, we often want to save the result value for further 
 a <- 10 - 2
 ```
 
-The value assigned to a variable can be updated. In the previous code cell, we assigned the numerical value of 8 to a. In the code cell below, we first assign 12 to `a`. Then, we do a step of further computation by adding 5 to the value stored in `a`. Before you run the code cell, can you guess the value of `a + 5`?
+The value assigned to a variable can be updated. In the previous code cell, we assigned the numerical value of 8 to `a`. In the code cell below, we first assign 12 to `a`. Then, we do a step of further computation by adding 5 to the value stored in `a`. Before you run the code cell, can you guess the value of `a + 5`?
 
 ```{r}
 a <- 12
@@ -243,7 +243,7 @@ library(janeaustenr) # import janeaustenr package
 View(head(austen_books(), 20)) # take a look at the first 20 rows of the data
 ```
 
-#### Pre-process the text of the addresses
+#### Pre-process the text of the novels
 
 To pre-process the data and prepare it in a form that is ready for analysis, we are going to use a bunch of R libraries. Along the way, we will see what each of those libraries do for us.
 
@@ -252,7 +252,6 @@ First of all, we will use the `tidyverse` library, which is a collection of R pa
 ```{r}
 library(tidyverse) # import the tidyverse library
 austen <- austen_books() # get the books of austen
-austen <- as_tibble(austen) # for better printing
 ```
 
 ##### Extracting data of interest
@@ -444,7 +443,7 @@ Next, we use the `slice_max()` function to get the top 10 frequent words by book
 # get the top 10 frequent words by book
 austen_top10_by_book <- slice_max(
   austen_word_count_by_book, 
-  n, 
+  n,
   n=10
   ) 
 
@@ -452,17 +451,16 @@ austen_top10_by_book <- slice_max(
 View(austen_top10_by_book) 
 ```
 
-We can plot the results by book in a horizontal bar chart. This is just a teaser. We will not cover visualization in the this intro to R series.
+We can plot the results by book in a horizontal bar chart. This is just a teaser. We will not cover visualization in detail in the this intro to R series.
 
 ```{r}
 # plot the top 10 frequent words by book 
-austen_top10_by_book |> 
-  ggplot()  +
-  geom_col(aes(x = n, y = reorder_within(word_stemmed, n, book))) +
+ggplot(austen_top10_by_book, 
+       aes(x = n, y = reorder_within(word_stemmed, n, book), fill=book))  +
+  geom_col(show.legend = FALSE) +
   scale_y_reordered() +
   labs(y = "word") +
-  facet_wrap(~book, scales = "free") +
-  theme(strip.text.x = element_blank())
+  facet_wrap(facets="book", scales = "free")
 ```
 
 #### Exercise 3
@@ -488,9 +486,9 @@ It's your turn! In the last exercise, you have pre-processed the `sotu.csv` file
 
 Congratulations! You have completed *R Basics 1.* There are two more lessons in *R Basics:*
 
--   R Basics 2
+-   [R Basics 2](./R-basics-2.Rmd)
 
--   R Basics 3
+-   [R Basics 3](./R-basics-3.Rmd)
 
 ### Start Next Lesson: [R Basics 2](./R-basics-2.Rmd)
 

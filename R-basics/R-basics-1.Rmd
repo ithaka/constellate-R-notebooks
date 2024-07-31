@@ -79,7 +79,7 @@ In the previous examples, each line of code that you ran is an expression. The s
 Parentheses can be used to clarify the order of the operations.
 
 ```{r}
-(12-2)/5
+12-2/5
 ```
 
 Certain calculations will need to use the built-in functions in R. For example, if you want to take the square root of 16, you can use the `sqrt()` function.
@@ -147,7 +147,7 @@ Note that if a vector only contains a single element, it is still a vector. In t
 vec_chr1 <- c('text', 'analysis', 'with', 'R') # create a vector containing some strings
 typeof(vec_chr1) # check the type of the value stored in vec_chr1
 
-vec_chr2 <- c('R') # containing a vector containing a single string
+vec_chr2 <- c('R') # create a vector containing a single string
 typeof(vec_chr2)  # check the type of the value stored in vec_chr2
 length(vec_chr2) # check the length of vec_chr2
 ```
@@ -181,7 +181,7 @@ To access the elements in a list, we can use index numbers. To access the first 
 lst1[[1]]
 ```
 
-We can give the elements in a list names. Let's update lst1 by assigning names to the elements. Here, the first element 'David' is named 'name', the second element is named 'age', and the third element is named 'graduate'.
+We can give the elements in a list names. Let's update `lst1` by assigning names to the elements. Here, the first element 'David' is named 'name', the second element is named 'age', and the third element is named 'graduate'.
 
 ```{r}
 # create a list and assign the elements names
@@ -195,7 +195,7 @@ lst1 <- list(
 When we access the elements in a list where the elements have a name, the names can be used as keys for us to retrieve the value of the element with that name.
 
 ```{r}
-lst1['name'] # accessing an element by key name
+lst1[['name']] # accessing an element by key name
 ```
 
 Alternatively, you can use the `lst$key` format to access an element.
@@ -218,11 +218,11 @@ lst2[c(10:20)] # retrieve the tenth to the twentieth element from lst2
 
 ### Exercise 1
 
-It's your turn! You have learned how to get a slice of a list. You also have learned how to create a vector with numbers in a range with a certain step size. Suppose that you would want to retrieve every other number from the 10th to the 20th element in lst2. How do you do it?
+It's your turn! You have learned how to get a slice of a list. You also have learned how to create a vector with numbers in a range with a certain step size. Suppose that you would want to retrieve every other number from the 10th to the 20th element in `lst2`. How do you do it?
 
 ```{r}
 # retrieve every other element from the 10th to the 20th element in lst2
-
+lst2[seq(10,20,by=2)]
 ```
 
 ## The work flow in data science
@@ -299,7 +299,7 @@ We can see that the `unnest_tokens()` function has removed the punctuations and 
 
 Stopwords are the words that do not convey much semantic content. For example, 'a' and 'the' occur very frequently in English. However, they do not have much meaning to themselves. Therefore, frequency of such words do not tell us much about what a document conveys. In order to focus on the content words in our analysis, we will remove the stop words from the word token list we obtained just now.
 
-In R, there is a very useful package `stopwords` that have a list of English stopwords.
+In R, there is a very useful package `stopwords` that has stopwords lists for many different languages, including English.
 
 ```{r}
 library(stopwords)
@@ -319,7 +319,7 @@ We can see that `austen_words` have 725,064 rows while the `austen_nonstop` has 
 
 ##### Removal of numbers
 
-Numbers are not useful in our analysis either, so let's remove them. The `str_detect()` function can detect all the work tokens that are numerical.
+Numbers are not useful in our analysis either, so let's remove them. The `str_detect()` function can detect all the word tokens that are numerical.
 
 ```{r}
 str_detect('1987', "[:digit:]")
@@ -332,7 +332,7 @@ austen_nonstop_nondigit <- filter(austen_nonstop, !str_detect(word, "[:digit:]")
 austen_nonstop_nondigit
 ```
 
-We can see that the year 1811 and the number '1' in 'chapter 1' have been removed.
+We can see that the year '1811' and the number '1' in 'chapter 1' have been removed.
 
 ##### Stemming
 
@@ -448,7 +448,7 @@ austen_top10_by_book <- slice_max(
   ) 
 
 # take a look at the result
-View(austen_top10_by_book) 
+austen_top10_by_book
 ```
 
 We can plot the results by book in a horizontal bar chart. This is just a teaser. We will not cover visualization in detail in the this intro to R series.
@@ -518,14 +518,10 @@ download.file(url = url, destfile = "sotu.csv")
 sotu_raw = read.csv('sotu.csv') # read in the data
 sotu_raw <- as_tibble(sotu_raw)
 
-# extracting the data of interest
-sotu_subset <- filter(sotu_raw, 2011<=year)
-
 # pre-process the data
 library(stopwords) # import the stopwords library to get the English stopwords
 library(SnowballC) # import SnowballC library to do stemming
 stopwords_en <- stopwords(language = "en") # get the stopwords in English
-
 
 # put everything in one big code chunk
 sotu_nonstop_nondigit_stemmed <- sotu_raw %>% 

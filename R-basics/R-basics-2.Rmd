@@ -34,7 +34,7 @@ For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.c
 
 ## What is Key Word in Context (KWIC) analysis?
 
-Keyword in context (KWIC) is an analysis that looks at a word and its every occurrence in a text to find out its meaning and usage. KWIC analysis is inspired by Rupert Firth's observation that you will know a word's meaning, or sense, by looking at the other words around it. KWIC is often in the format as shown in the image below, with the key word placed in a central column within a "context window," a chosen number of words or characters that occur both before and after the given word.
+Keyword in context (KWIC) is an analysis that looks at a word and its every occurrence in a text to find out its meaning and usage. KWIC analysis is inspired by Rupert Firth's observation that you will know a word's meaning, or sense, by looking at the other words around it. KWIC is often in the format as shown in the image below, with the keyword placed in a central column within a "context window," a chosen number of words or characters that occur both before and after the given word.
 
 ![Figure 1: The key word 'effect' in context from the [BNC-Baby corpus](http://www.natcorp.ox.ac.uk/corpus/babyinfo.html).](https://ithaka-labs.s3.amazonaws.com/static-files/streamlit/effect.png)
 
@@ -77,12 +77,13 @@ We can make the display easier to read by giving each file an index.
 
 ```{r}
 file_name <- dir("data", "\\.txt$", full.names=TRUE)
+
 for (i in seq_along(file_name)){
   cat(i, file_name[i], "\n", sep=" ")
 }
 ```
 
-`seq_along()` is used for generating a sequence of elements the same as that of the length of the input vector. `cat()` converts its arguments to character strings, concatenates them, separating them by the string given to the `sep` parameter, and then prints them.
+`seq_along()` generates a sequence of integers from 1 to the length of the object passed to it. `cat()` converts its arguments to character strings, concatenates them, separating them by the string given to the `sep` parameter, and then prints them.
 
 To make things even more compact, we can put the code chunk above into a function.
 
@@ -140,7 +141,7 @@ show_files <- function(dir_path, pattern="\\.txt$"){
 }
 ```
 
-Within the parenthesis following the keyword `function`, we find two parameters. One is `dir_path`; another is pattern whose default value is set to "\\\\.txt\$". This means, the defined function takes two inputs. The actual values we pass to the parameters are called **arguments**.
+Within the parenthesis following the keyword `function`, we find two parameters. One is `dir_path`; another is `pattern` whose default value is set to "\\\\.txt\$". This means, the defined function takes two inputs. The actual values we pass to the parameters are called **arguments**.
 
 ##### Function body
 
@@ -158,7 +159,7 @@ The function body is *a set of commands inside the curly braces* that are run ev
 
 ##### Calling a function
 
-To call a function, we just put the function name and added the necessary arguments inside the parenthesis.
+To call a function, we just put the function name and add the necessary arguments inside the parenthesis.
 
 ```{r}
 ### Call a function in R
@@ -179,12 +180,12 @@ Note that when we call `show_files()`, we don't need to give an argument for the
 In the function body of `show_files()` function, we have a `for` loop. A `for` loop is used for iterating over a sequence. The basic syntax of a `for` loop is as follows:
 
 ```         
-for (variable in sequence) {
+for (variable in sequence){
     expression
 }
 ```
 
-Let's start with a simple example. Pay special attention to the use of parenthesis and curly braces.
+Let's start with a simple example. Pay special attention to the use of parentheses and curly braces.
 
 ```{r}
 fruits <- c("apple", "pear", "banana") # create a vector
@@ -204,7 +205,7 @@ for (x in fruits) {# iterate over the values in the defined vector
 }
 ```
 
-Now, let's turn back to the `show_files()` function and focus on the `for` loop in its function body.
+Now, let's go back to the `show_files()` function and focus on the `for` loop in its function body.
 
 ```{r}
 show_files <- function(dir_path, pattern="\\.txt$"){
@@ -224,14 +225,15 @@ With the knowledge of functions and `for` loop, we are ready to jump into the KW
 
 ### Break up text into tokens
 
-In order to do a KWIC analysis, we will need to break up a text into tokens. In [R-basics-1](./R-basics-1.Rmd), we have learned that the `unnest()` function from the `tidytext` library can help us tokenize a text.
+In order to do a KWIC analysis, we will need to break up a text into tokens. In [R-basics-1](./R-basics-1.Rmd), we have learned that the `unnest_tokens()` function from the `tidytext` library can help us tokenize a text.
 
 ```{r}
-### use unnest() to tokenize text
+### use unnest_tokens() to tokenize text
 library(tidyverse) # import library
 library(tidytext) # import library
 austen <- scan("data/austen.txt", what = 'character', sep = '\n') # read in the text 
 austen <- as_tibble(austen) # turn text into a tibble
+view(head(austen, 10))
 austen_words <- unnest_tokens(austen, strip_punct = FALSE, output=word, input=value)  # tokenization
 ```
 
@@ -243,12 +245,12 @@ pos_w = which(austen_words=='anguish')
 pos_w
 ```
 
-If we would like to grab the preceding and the following word of the target word, we could do so by iterating through the indices in the `position_w` vector and for each position, we get the neighboring words and concatenate them with the target word.
+If we would like to grab the preceding and the following word of the target word, we could do so by iterating through the indices in the `pos_w` vector and for each position, we get the neighboring words and concatenate them with the target word.
 
 ### Set a context window to get KWIC line
 
 ```{r}
-for (pos in pos_w){ # for each position in position_w
+for (pos in pos_w){ # for each position in pos_w
   start = pos - 1
   end = pos + 1
   words <- (austen_words %>% slice(start:end))[['word']]
@@ -259,7 +261,7 @@ for (pos in pos_w){ # for each position in position_w
 Of course, you can enlarge the context window by adjusting the starting and ending index.
 
 ```{r}
-for (pos in pos_w){ # for each position in position_w
+for (pos in pos_w){ # for each position in pos_w
   start = pos - 10
   end = pos + 10
   words <- (austen_words %>% slice(start:end))[['word']]
@@ -271,7 +273,7 @@ for (pos in pos_w){ # for each position in position_w
 
 Now that you know how to read in the data from a txt file, break it up into tokens, identify the index of a certain keyword and extract the KWIC lines for that particular keyword with a certain context size, you can put everything together to do KWIC analysis of a text!
 
-Suppose we would like to do a KWIC analysis of Moby Dick. The keyword we are interested in is "dog". We would like to get five word on either side of the keyword. Let's write a script to do KWIC.
+Suppose we would like to do a KWIC analysis of *Moby Dick*. The keyword we are interested in is "dog". We would like to get five word on either side of the keyword. Let's write a script to do KWIC.
 
 ```{r}
 ### create a five-word KWIC list of "dog" in Moby Dick
@@ -280,15 +282,14 @@ melville <- scan("./data/melville.txt", what='character', sep='\n') # read in th
 melville <- as_tibble(melville) # read data as a tibble
 melville_words <- unnest_tokens(melville, strip_punct = FALSE, output=word, input=value) # tokenization
 pos_dog <- which(melville_words=='dog') # find the indices for the word dog
-num_dash = paste(replicate(10, '-'))
+num_dash = paste(replicate(10, '-')) ## define dash counts for later printing
 for (i in seq_along(pos_dog)){# for each position in position_dog
   start = pos_dog[i] - 5
   end = pos_dog[i] + 5
-  kwic_line <- paste((melville_words %>% slice(start:end))[['word']], collapse=' ')
-  kwic_line[which(kwic_line == "dog")] <- paste("[", "dog", "]", sep = "")
+  kwic_words <- (melville_words %>% slice(start:end))[['word']]
   cat(num_dash, as.character(i), num_dash)
   cat('\n')
-  cat(kwic_line, "\n", sep=' ')
+  cat(kwic_words, '\n', sep=' ')
 }
 ```
 
@@ -340,7 +341,7 @@ Now, let's rewrite the KWIC function we created in the last section to make it a
 ```{r}
 # abstract the function from previous section to accept user input
 kwicer <- function(dir_path){ # define a function called kwicer
-file_id <- as.numeric(readline(show_files(dir_path))) # elicit file choice from user and turn it to integer
+file_id <- as.numeric(readline(paste('Select a file using its index: ', show_files(dir_path), sep=" "))) # elicit file choice from user and turn it to integer
 keyword <- readline("Enter a keyword: ") # elicit a keyword from user
 context <- as.numeric(readline("What is the context size? ")) # elicit a context size from user
 file_path <- file.path(dir_path, dir(dir_path)[file_id]) # set the file path based on user choices from above
@@ -374,12 +375,12 @@ kwicer("data")
 
 Note that the KWIC lines we get as output from the previous sections are not stored in any form. This means, if you sign out of the current session and come back later, your output KWIC lines are lost. However, in real life, after processing files and obtaining some kind of output, we would want to store the output in a file to continue working in the future.
 
-In this section, a sample code chunk that demonstrates how to write the KWIC lines we get from a file into a .csv file is given. A .csv file is used to store tabular data that can be opened by Excel, Google Sheets or other software that can read tabular data. We will learn more in the next lesson, but feel free to play with the code and try exercise 2!
+In this section, a sample code chunk that demonstrates how to write the KWIC lines we get from a file into a `.csv` file is given. A `.csv` file is used to store tabular data that can be opened by Excel, Google Sheets or other software that can read tabular data. We will learn more in the next lesson, but feel free to play with the code and try exercise 2!
 
 ```{r}
 # abstract the function from previous section to accept user input
 kwicer <- function(dir_path){ # define a function called kwicer
-file_id <- as.numeric(readline(show_files(dir_path))) # elicit file choice from user and turn it to integer
+file_id <- as.numeric(readline(paste('Select a file using its index', show_files(dir_path), sep=' '))) # elicit file choice from user and turn it to integer
 keyword <- readline("Enter a keyword: ") # elicit a keyword from user
 context <- as.numeric(readline("What is the context size? ")) # elicit a context size from user
 file_path <- file.path(dir_path, dir(dir_path)[file_id]) # set the file path based on user choices from above
@@ -444,7 +445,7 @@ Congratulations! You have completed *R Basics 2.* There are one more lesson in *
 ### in this exercise, we write the process into a function which
 ### takes in a txt file and output a KWIC list
 sense_kwic <- function(f_loc){
-  sense <- scan("./data/austen.txt", what='character', sep='\n') # read in the data
+  sense <- scan(f_loc, what='character', sep='\n') # read in the data
   sense <- as_tibble(austen) # read data as a tibble
   sense_words <- unnest_tokens(sense, strip_punct = FALSE, output=word, input=value) # tokenization
   pos_dog <- which(sense_words=='dog') # find the indices for the word dog
@@ -452,7 +453,7 @@ sense_kwic <- function(f_loc){
   for (i in seq_along(pos_dog)){# for each position in position_dog
     start = pos_dog[i] - 5
     end = pos_dog[i] + 5
-    kwic_line <- paste((melville_words %>% slice(start:end))[['word']], collapse=' ')
+    kwic_line <- paste((sense_words %>% slice(start:end))[['word']], collapse=' ')
     kwic_line[which(kwic_line == "dog")] <- paste("[", "dog", "]", sep = "")
     cat(num_dash, as.character(i), num_dash)
     cat('\n')

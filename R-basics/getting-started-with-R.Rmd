@@ -128,7 +128,7 @@ In order to make the document easy to follow for the learners, open an R noteboo
 
 Congratulations! You have completed "Getting Started with R Notebooks." If you have never programmed in the [R Language](https://constellate.org/docs/key-terms/#r) before, we recommend you complete:
 
--   [*R Basics 1*](.R-basics-1.Rmd)
+-   [*R Basics 1*](./R-basics-1.Rmd)
 
 -   [*R Basics 2*](./R-basics-2.Rmd)
 

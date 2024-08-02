@@ -76,18 +76,54 @@ files
 We can make the display easier to read by giving each file an index.
 
 ```{r}
+# get a vector containing the full names of all .txt files in the data folder, 
 file_name <- dir("data", "\\.txt$", full.names=TRUE)
 
-for (i in seq_along(file_name)){
-  cat(i, file_name[i], "\n", sep=" ")
+for (i in seq_along(file_name)){ # iterate through 1 to the total num of txt files
+  cat(i, file_name[i], "\n", sep=" ") # concatenate index number, file name, newline chr
 }
 ```
 
-`seq_along()` generates a sequence of integers from 1 to the length of the object passed to it. `cat()` converts its arguments to character strings, concatenates them, separating them by the string given to the `sep` parameter, and then prints them.
-
-To make things even more compact, we can put the code chunk above into a function.
+There are two functions in the code chunk that we have not seen before. `seq_along()` generates a sequence of integers from 1 to the length of the object passed to it. For example, in the code chunk below, the vector stored in `vec` has three elements in it. If we apply `seq_along()` to it, we get a vector containing 1, 2, 3.
 
 ```{r}
+# an example that demonstrates seq_along()
+vec <- c("a", "b", "c")
+seq_along(vec)
+```
+
+`cat()` converts its arguments to character strings, concatenates them, separating them by the string given to the `sep` parameter, and then prints them.
+
+```{r}
+# examples that demonstrates cat()
+
+cat('Hello', 'World!', '\n', sep=' ')
+cat(100, 'rows', sep=' ')
+```
+
+There is another function `paste()` in R that also concatenates strings. However, it will not print out the resulting string. Therefore, you can use `cat()` when you want to output strings to the console or write to a file. You can use `paste()` when you need to create a concatenated string for further use in your code.
+
+```{r}
+# paste() function
+paste("Hello", "World!", collapse = ' ')
+```
+
+We can rewrite the code that displays the text files in the data folder into a function.
+
+```{r}
+### how the code is like before we rewrite it into a function
+
+# get a vector containing the full names of all .txt files in the data folder, 
+file_name <- dir("data", "\\.txt$", full.names=TRUE)
+
+for (i in seq_along(file_name)){ # iterate through 1 to the total num of txt files
+  cat(i, file_name[i], "\n", sep=" ") # concatenate index number, file name, newline chr
+}
+```
+
+```{r}
+### how the code is like after we rewrite it into a function
+
 # create a custom function to display the file names in a dir
 show_files <- function(dir_path, pattern="\\.txt$"){
   file_name <- dir(dir_path, pattern, full.names=TRUE)
@@ -233,16 +269,26 @@ library(tidyverse) # import library
 library(tidytext) # import library
 austen <- scan("data/austen.txt", what = 'character', sep = '\n') # read in the text 
 austen <- as_tibble(austen) # turn text into a tibble
-view(head(austen, 10))
-austen_words <- unnest_tokens(austen, strip_punct = FALSE, output=word, input=value)  # tokenization
+# view(head(austen, 10)) # preview the raw data 
+austen_words <- unnest_tokens(austen, strip_punct = FALSE, output=word, input=value) # tokenization
 ```
 
 ### Get the index of keyword
+
+To identify the index of the keyword, we will use the `which()` function. The `which()` function in R is used to identify the indices of elements in a logical vector that are TRUE.
 
 ```{r}
 ### Choose a word to get its context
 pos_w = which(austen_words=='anguish')
 pos_w
+```
+
+We can confirm that in the tibble stored in austen_words, row 66603 and row 128311 contain the word "anguish" in them.
+
+```{r}
+# confirm that the two indices are the indices for the keyword
+austen_words[['word']][66603]
+austen_words[['word']][128311]
 ```
 
 If we would like to grab the preceding and the following word of the target word, we could do so by iterating through the indices in the `pos_w` vector and for each position, we get the neighboring words and concatenate them with the target word.
@@ -273,7 +319,7 @@ for (pos in pos_w){ # for each position in pos_w
 
 Now that you know how to read in the data from a txt file, break it up into tokens, identify the index of a certain keyword and extract the KWIC lines for that particular keyword with a certain context size, you can put everything together to do KWIC analysis of a text!
 
-Suppose we would like to do a KWIC analysis of *Moby Dick*. The keyword we are interested in is "dog". We would like to get five word on either side of the keyword. Let's write a script to do KWIC.
+Suppose we would like to do a KWIC analysis of *Moby Dick*. The keyword we are interested in is "dog". We would like to get five tokens on either side of the keyword. Let's write a script to do KWIC.
 
 ```{r}
 ### create a five-word KWIC list of "dog" in Moby Dick
@@ -287,7 +333,8 @@ for (i in seq_along(pos_dog)){# for each position in position_dog
   start = pos_dog[i] - 5
   end = pos_dog[i] + 5
   kwic_words <- (melville_words %>% slice(start:end))[['word']]
-  cat(num_dash, as.character(i), num_dash)
+  kwic_words[which(kwic_words == 'dog')] <- paste('[', 'dog', ']', sep='') #highlight keyword
+  cat(num_dash, i, num_dash)
   cat('\n')
   cat(kwic_words, '\n', sep=' ')
 }
@@ -371,6 +418,29 @@ for (i in seq_along(pos_keyword)){
 kwicer("data")
 ```
 
+```{r}
+### an example demonstrating the start and end of a kwic line
+vec <- c('John', 'has', 'a', 'dog', 'that', 'is', '10', 'years', 'old', 'now')
+pos_dog <- which(vec=='dog')
+
+# get a kwic line for 'dog' with 5 tokens on either side in the naive way
+# start <- pos_dog - 5
+# end <- pos_dog + 5
+# kwic_line <- vec[start:end]
+
+# get a kwic line with edge case in mind
+start <- pos_dog - 5
+end <- pos_dog + 5
+if (start < 1){
+  start <- 1
+}
+if (end > length(vec)){
+  end <- length(vec)
+}
+kwic_line <- vec[start:end]
+kwic_line
+```
+
 ## Write the output into a file
 
 Note that the KWIC lines we get as output from the previous sections are not stored in any form. This means, if you sign out of the current session and come back later, your output KWIC lines are lost. However, in real life, after processing files and obtaining some kind of output, we would want to store the output in a file to continue working in the future.
@@ -380,7 +450,7 @@ In this section, a sample code chunk that demonstrates how to write the KWIC lin
 ```{r}
 # abstract the function from previous section to accept user input
 kwicer <- function(dir_path){ # define a function called kwicer
-file_id <- as.numeric(readline(paste('Select a file using its index', show_files(dir_path), sep=' '))) # elicit file choice from user and turn it to integer
+file_id <- as.numeric(readline(paste('Select a file using its index: ', show_files(dir_path), sep=' '))) # elicit file choice from user and turn it to integer
 keyword <- readline("Enter a keyword: ") # elicit a keyword from user
 context <- as.numeric(readline("What is the context size? ")) # elicit a context size from user
 file_path <- file.path(dir_path, dir(dir_path)[file_id]) # set the file path based on user choices from above
@@ -388,10 +458,10 @@ file <- scan(file_path, what="character", sep="\n") # read in the data from file
 file <- as_tibble(file) # turn text into a tibble
 file_words <- unnest_tokens(file, strip_punct = FALSE, output=word, input=value)  #tokenization
 pos_keyword <- which(file_words == keyword) # find the indices of the keyword
-output_df <- data.frame(
-  matrix(nrow=length(pos_keyword), ncol=3) # create an empty dataframe
+output_tibble <- as_tibble(
+  matrix(nrow=length(pos_keyword), ncol=3) # create an empty tibble
 )
-colnames(output_df) <- c("position", "keyword", "kwic")
+colnames(output_tibble) <- c("position", "keyword", "kwic") # name the columns
 for (i in seq_along(pos_keyword)){
   start <- pos_keyword[i] - context 
   if (start < 1){
@@ -403,14 +473,14 @@ for (i in seq_along(pos_keyword)){
   } # get the index of the ending word in a kwic line
   kwic_line <- paste((file_words %>% slice(start:end))[['word']], collapse=" ")
   kwic_line[which(kwic_line == keyword)] <- paste("[", keyword, "]", sep = "") # highlight the keyword using square brackets
-  df_row <- cbind(pos_keyword[i], keyword, kwic_line)
-  output_df[i,] <- df_row
+  df_row <- cbind(pos_keyword[i], keyword, kwic_line) # bind keyword pos, keyword and kwic as cols
+  output_tibble[i,] <- df_row # write the data into row
 }
   out_file <- paste(
     keyword, "kwic", context, "words", "in", 
     "context", dir(dir_path)[file_id],"csv", sep=".")
-  write.csv(output_df, file.path("data", out_file))
-return(output_df)
+  write.csv(output_tibble, file.path("data", out_file))
+# return(output_tibble)
 }
 
 # call the function to see how it operates

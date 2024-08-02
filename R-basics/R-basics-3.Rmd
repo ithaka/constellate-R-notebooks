@@ -14,7 +14,7 @@ For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.c
 
 # R Basics 3
 
-**Description** : This lesson teaches how to do sentiment analysis in R. Along the way, you will learn regular expressions, tibble transformation, and simple plotting with ggplot.
+**Description** : This lesson teaches how to do lexicon-based sentiment analysis in R. Along the way, you will learn regular expressions, tibble transformation, and simple plotting with ggplot.
 
 **Use case** : For learners (detailed explanation, not ideal for researchers)
 
@@ -42,7 +42,7 @@ In this lesson, we will demonstrate how to do lexicon-based sentiment analysis i
 
 ### Lexicon-based sentiment analysis
 
-In [R-basics-1](./R-basics-1.Rmd), you already used the `tidytext` package. In this packages, we can find several sentiment lexicons.
+In [R-basics-1](./R-basics-1.Rmd), you already used the `tidytext` package. In this package, we can find several sentiment lexicons.
 
 -   `AFINN` from [Finn Årup Nielsen](http://www2.imm.dtu.dk/pubdb/views/publication_details.php?id=6010),
 
@@ -68,7 +68,7 @@ unique(bing_lex$sentiment)
 
 Note that not every English word is in the `bing` lexicon because a lot of English words are quite neutral. There are also some domain-specific sentiment lexicons available, and they are supposed to be used to analyze texts from a specific content area.
 
-There are many questions to be considered when choosing a lexicon. For example, some sentiment lexicons were constructed via crowdsourcing through Amazon Mechanical Turk. Other lexicons were constructed by the labor the authors, and were validated using restaurant/movie reviews or Twitter data. Therefore, ideally we would want to apply a sentiment lexicon to texts which are of very similar styles to the texts the lexicon was validated on.
+There are many questions to be considered when choosing a lexicon. For example, some sentiment lexicons were constructed via crowdsourcing through Amazon Mechanical Turk. Other lexicons were constructed by the labor of the authors, and were validated using restaurant/movie reviews or Twitter data. Therefore, ideally we would want to apply a sentiment lexicon to texts which are of very similar styles to the texts the lexicon was validated on.
 
 ### How to calculate the sentiment score of a text?
 
@@ -86,7 +86,7 @@ original_books <- austen_books()
 original_books %>% head(10) %>% view()
 ```
 
-`%\>%` is called the pipe operator. It is from the dylpr package and is used to make the function call in a chain so that it is easier and more intuitive to read.
+`%>%` is called the pipe operator. It is from the `dylpr` package and is used to make the function call in a chain so that it is easier and more intuitive to read.
 
 For example, in the following line of code, we can actually break the operations down into several steps.
 
@@ -94,7 +94,7 @@ For example, in the following line of code, we can actually break the operations
 original_books %>% head(10) %>% view() 
 ```
 
-First, we use the `head()` function to get the first ten rows of the tibble stored in the variable original_books.
+First, we use the `head(10)` function to get the first ten rows of the tibble stored in the variable original_books.
 
 ```{r}
 # get the first ten rows of the tibble stored in original_books
@@ -104,6 +104,7 @@ original_books %>% head(10)
 Essentially, what is before the pipe operator is an input to the function after the pipe operator. Therefore, if we rewrite the command into the one in the code cell below, we will get the same result.
 
 ```{r}
+# rewrite the code into a form without the pipe operator
 head(original_books, 10) 
 ```
 
@@ -197,7 +198,7 @@ original_books <- austen_books() %>%
   unnest_tokens(output=word, input=text) # tokenization
 ```
 
-Now, let's go back to data preparation. We should be able to understand everything now.
+Let's go back to data preparation. We should be able to understand everything now.
 
 ### Lexicon-based sentiment analysis
 
@@ -209,7 +210,7 @@ Suppose for each of the 6 books in the `janeaustenr` library, we would like to d
 ### sentiment change over the narrative by book
 jane_austen_sentiment <- original_books %>%
   inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
-  count(book, index = linenumber %/% 80, sentiment) %>% # 
+  count(book, index = linenumber %/% 80, sentiment) %>% # chunk up the text
   pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
   mutate(sentiment = positive - negative)
 ```
@@ -226,6 +227,13 @@ jane_austen_sentiment
 ```
 
 An `inner_join()` only keeps observations from `x` that have a matching key in `y`. This means, when we do sentiment analysis of the books, we only use the words from the books that are also in the "bing" lexicon.
+
+```{r}
+### example demonstrating inner_join()
+x = as_tibble(c("hello", "world"))
+y = as_tibble(c("world","peace"))
+inner_join(x, y)
+```
 
 #### Exercise 1
 
@@ -247,6 +255,13 @@ Now, in the following code chunk, can you find if the "bing" lexicon has duplica
 
 ```
 
+```{r}
+### example demonstrating many-to-many relationship
+x = as_tibble(c("hello", "world"))
+y = as_tibble(c("hello", "hello"))
+inner_join(x, y, relationship = "many-to-many")
+```
+
 #### Count pos/neg labels in chunks for each book
 
 For each book, we will break it up into chunks of 80 lines. For each chunk, we are going to count the number of the positive and negative words, with which we can then plot the sentiment change throughout the book.
@@ -255,8 +270,8 @@ For each book, we will break it up into chunks of 80 lines. For each chunk, we a
 ### count by book and then by 80-line chunks
 jane_austen_sentiment <- original_books %>%
   inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
-  count(book, index = linenumber %/% 80, sentiment) 
-jane_austen_sentiment
+  count(book, index = linenumber %/% 80, sentiment) # chunk up the text
+view(head(jane_austen_sentiment, 20))
 ```
 
 `count()` quickly counts the unique values of one or more variables: `tibble %>% count(a, b)` is roughly equivalent to `tibble %>% group_by(a, b) %>% summarize(n = n())`
@@ -270,28 +285,20 @@ ex_tibble <- as_tibble(list(year=c(2020, 2020, 2021, 2021, 2021),
 ex_tibble %>% count(year, label)
 ```
 
-The double percentage sign %% means modulus in R. The result of the %% operator is the remainder of a division.
-
-```{r}
-# a simple example of the %% operator
-# 5 = 2 * 2 + 1
-5 %% 2
-```
-
 #### Transform the tibble into a format ready for plotting
 
 ```{r}
 ### count by book and then by 80-line chunks
 jane_austen_sentiment <- original_books %>%
   inner_join(get_sentiments("bing"), relationship = "many-to-many") %>% #label each word
-  count(book, index = linenumber %/% 80, sentiment) %>%
+  count(book, index = linenumber %/% 80, sentiment) %>% # chunk up the text 
   pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>%
   mutate(sentiment = positive - negative)
 ```
 
 ##### The pivot_wider() function
 
-`pivot_wider()` "widens" data, increasing the number of columns and decreasing the number of rows. The names_from parameter specifies from which variable you would like to draw new column names. The values_from parameter specifies from which variable you would like to get the values for the new columns. The values_fill parameter specifies if not all rows in the new columns have a value that you can draw from the specified variable in values_from, what value you would like to fill in.
+`pivot_wider()` "widens" data, increasing the number of columns and decreasing the number of rows. The `names_from` parameter specifies from which variable you would like to draw new column names. The `values_from` parameter specifies from which variable you would like to get the values for the new columns. The `values_fill` parameter specifies if not all rows in the new columns have a value that you can draw from the specified variable in `values_from`, what value you would like to fill in.
 
 ```{r}
 ### let's start with a simple example
@@ -341,7 +348,7 @@ ggplot(jane_austen_sentiment, aes(index, sentiment, fill = book)) +
 
 #### Exercise 2
 
-Can you get the tibble original_books and use the bing lexicon to get which 10 positive words occur the most frequently and which 10 negative words occur the most frequently across all 6 books in the janeaustenr library? Can you use ggplot to plot a bar chart to display the 10 most frequent positive and negative words?
+Can you get the tibble `original_books` and use the `bing` lexicon to get which 10 positive words occur the most frequently and which 10 negative words occur the most frequently across all 6 books in the `janeaustenr` library? Can you use `ggplot` to plot a bar chart to display the 10 most frequent positive and negative words?
 
 ```{r}
 ### get the 10 most frequent positive and negative words from Jane Austen's novels
@@ -475,4 +482,10 @@ ggplot(top_10_words, aes(n, word, fill = sentiment)) +
 
 ## References
 
+Liu, B. (2020). *Sentiment analysis: Mining opinions, sentiments, and emotions*. Cambridge university press.
+
+Nasukawa, T., & Yi, J. (2003, October). Sentiment analysis: Capturing favorability using natural language processing. In *Proceedings of the 2nd international conference on Knowledge capture* (pp. 70-77).
+
 Silge, J., & Robinson, D. (2017). *Text mining with R: A tidy approach*. O'Reilly Media.
+
+Wiebe, J. (2000). Learning Subjective Adjectives from Corpora. In *Proceedings of the National Conference on Artificial Intelligence (AAAI-2000)*.

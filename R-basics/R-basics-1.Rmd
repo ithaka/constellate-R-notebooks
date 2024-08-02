@@ -525,12 +525,22 @@ stopwords_en <- stopwords(language = "en") # get the stopwords in English
 
 # put everything in one big code chunk
 sotu_nonstop_nondigit_stemmed <- sotu_raw %>% 
-  filter(year > 2010) %>%  # extracting the data of interest
+  filter((year > 2010) & (year < 2021)) %>%  # extracting the data of interest
   unnest_tokens(output = word, input = text) %>%  # tokenization
   filter(!word %in% stopwords_en) %>% # removal of stopwords
   filter(!str_detect(word, "[:digit:]")) %>%  # removal of numbers
   mutate(word_stemmed = wordStem(word, language = "en")) # stemming
 View(sotu_nonstop_nondigit_stemmed %>% head(10))
+```
+
+```{r}
+## other ways of filtering the data to year 2011 - 2020 shared by class participants
+# first proposal
+filter(sotu_raw, year==2011:2020)
+
+# # second proposal
+year_range <- seq(2011, 2020)
+filter(sotu_raw, year %in% year_range)
 ```
 
 #### Exercise 3 solution

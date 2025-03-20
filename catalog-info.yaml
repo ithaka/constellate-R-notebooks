@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: constellate-R-notebooks
+  description: Auto-generated catalog-info.yaml.
+  tags:
+  - unknown
+spec:
+  type: unknown
+  owner: group:possible-orphan
+  lifecycle: unknown

@@ -1,0 +1,618 @@
+---
+title: "Introduction to statistical analysis using R 1"
+output: 
+  html_notebook:
+    toc: true
+    theme: united
+---
+
+![](https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/CC_BY.png "Logo Title Text 1")
+
+Created by Zhuo Chen for [JSTOR Labs](https://labs.jstor.org/) under [Creative Commons CC BY License](https://creativecommons.org/licenses/by/4.0/)
+
+For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.chen@ithaka.org)
+
+# Intro to statistical analysis using R - 1
+
+**Description** : This lesson teaches some foundational concepts in statistics with a focus on descriptive statistics.
+
+**Use case** : For learners (detailed explanation, not ideal for researchers)
+
+**Difficulty:** Beginner
+
+**Completion time:** 90 minutes
+
+**Knowledge required:** No prerequisites
+
+**Knowledge recommended:** [StatQuest with Josh Starmer](https://www.youtube.com/channel/UCtYLUTtgS3k1Fg4y5tAhLbw)
+
+**Data format:** Dataframe
+
+**Libraries used:**
+
+**Research pipeline:** None
+
+## What is statistics?
+
+Statistics is the science concerned with the methods for collecting, organizing, analyzing, interpreting and presenting data. It helps us make objective, evidence-based conclusions about patterns in the data. In this introductory course, we will start with descriptive statistics and then shift focus to inferential statistics. Descriptive statistics is useful when we explore our raw data while inferential statistics allows us to make broader conclusions beyond our immediate dataset.
+
+### Foundational concepts in statistics
+
+#### Variable types
+
+Understanding variable types is crucial because variable types determine
+
+-   which plots are appropriate
+
+-   which statistical tests are appropriate
+
+##### Nominal variables
+
+A nominal variable (also referred to as a categorical variable) is one that represents **distinct non-ordered** categories. For example, entity types are nominal variables. An entity could be a person, a location or an organization, but none of them is any bigger or better than the others. For these kinds of variables it does not make any sense to average them.
+
+```{r}
+# Create a sample of named entities data for explaining nominal variables
+entities_sample <- data.frame(
+  entity_text = c("Washington", "New York", "Congress"),
+  entity_type = c("PER", "LOC", "ORG"))
+entities_sample
+```
+
+##### Ordinal variables
+
+An ordinal variable is one in which there is a natural way to order the different categories but you can't do addition, subtraction, multiplication or division of the values because the interval between the values is not consistent. For example, the ranking in a diving competition is an ordinal variable: gold, silver, and bronze. While there is an ordering relationship, it does not make sense to say that the difference of the skill level between the gold winner and the silver winner is the same as the difference of the skill level between the silver winner and the bronze winner.
+
+```{r}
+# Create a sample of game place data for explaining ordinal variables
+game_sample <- data.frame(
+  athlets = c("Alex Alan", "Briana Bale", "Cynthia Claire"),
+  place = c("Gold", "Silver", "Bronze"))
+game_sample
+```
+
+##### Interval variables
+
+An interval variable is a numerical scale in which the differences between the values on the scale are meaningful. Therefore, we can do addition and subtraction between the values. However, the scale does not have a natural zero value and we cannot do multiplication and division of the values. For example, in the case of temperature in celsius degrees, the 3° difference between 5° and 8° is the same as the 3° difference between 17° and 20°. However, we cannot say that water of 10° is twice as hot as water of 5°.
+
+```{r}
+# Create a sample of temperature in celsius degree data for explaining interval variables
+temp_sample <- data.frame(
+  container = c("Plastic", "Glass", "Ceramic"),
+  temp_celsius = c(60, 70, 100))
+temp_sample
+```
+
+##### Ratio variables
+
+A ratio variable is a numerical scale in which the differences between the values are meaningful and zero really means zero. For example, height, weight and response time (e.g. how much time does it take for a participant to answer a question) are all ratio variables.
+
+```{r}
+# Create a sample of respnse time data for explaining ratio variables
+rt_sample <- data.frame(
+  subject = c("01", "02", "03"),
+  response_time_seconds = c("5", "10", "20"))
+rt_sample
+```
+
+### Descriptive statistics
+
+Descriptive statistics is crucial in conducting exploratory data analysis which can help us understand the data before diving into modeling or deeper analysis. In this section, we are going to talk about the main exploratory steps and the visualizations for each purpose.
+
+First of all, let's take a look at the sample dataset we will use in this course. The sample dataset is the same as the one Dr. William Mattingly used in the Named Entity Recognition using Large Language Models course. This sample dataset contains 1000 rows of data, i.e. 1000 newspaper articles, and the year range is 1938 - 1945.
+
+```{r}
+# Load the dataset in R
+dataset <- read.csv("data/american_stories_dataset.csv", stringsAsFactors = FALSE)
+
+# Examine the data
+head(dataset)
+```
+
+```{r}
+# display the structure of the dataset
+str(dataset)
+```
+
+When we describe a dataset, there are two main things we want to describe: the central tendency and the variability of the dataset.
+
+There are three statistics we can use to describe the central tendency of a dataset: mean, median and mode. What's important is to understand which statistic is appropriate in what cases.
+
+#### Mean
+
+Mean is used for interval or ratio variables. Imagine you're researching the language convention of the newspaper articles published in this dataset and you use the average word length as a metric to study it.
+
+```{r}
+# Function to calculate average word length
+avg_word_length <- function(text) {
+  words <- unlist(strsplit(text, "\\s+"))
+  if (length(words) == 0) return(0)
+  word_lengths <- nchar(words)
+  return(mean(word_lengths))
+}
+
+# Calculate average word length
+dataset$avg_word_length <- sapply(dataset$article, avg_word_length)
+
+# Calculate mean
+mean_wl <- mean(dataset$avg_word_length)
+
+# Create histogram
+hist(dataset$avg_word_length, 
+     breaks = 50,
+     col = "lightblue", 
+     border = "white",
+     main = "Distribution of Average Word Length",
+     xlab = "Average Word Length (Characters)",
+     prob = TRUE)
+
+# Add lines for mean
+abline(v = mean_wl, col = "red", lwd = 2)
+
+# Add legend
+legend("topright", 
+       legend = c(paste("Mean =", round(mean_wl, 2))),
+       col = c("red", "green", "black"),
+       lty = c(1, 2, 1),
+       lwd = c(2, 2, 1))
+```
+
+As we can see, the average word length forms a quite symmetric distribution around the mean and the distribution is in a bell shape. In this case, the distribution is not skewed to the left or to the right by a few smaller or bigger values. Also, there is no extreme values that pull the mean to the left or to the right.
+
+### Exercise 1
+
+It's your turn! You have learned that mean is a statistic to describe the central tendency of a dataset. Now, suppose we have a dataset of annual income and the distribution of the data looks like the following. In this case, is the mean a good statistic to describe the central tendency, why or why not?
+
+```{r}
+# Create a more continuous income dataset (in thousands of dollars)
+income <- c(
+  # Low to middle incomes (25 people)
+  30, 32, 35, 38, 40, 41, 43, 45, 47, 49,
+  50, 52, 55, 57, 59, 60, 62, 65, 68, 70,
+  72, 75, 78, 80, 83,
+  
+  # Upper middle incomes (10 people)
+  90, 95, 100, 105, 110, 115, 120, 130, 140, 150,
+  
+  # High incomes (5 people)
+  180, 200, 250, 300, 350,
+  
+  # Very high incomes (2 people)
+  450, 500
+)
+
+# Calculate mean
+mean_income <- mean(income)
+
+# Create histogram with more continuous breaks
+hist(income, 
+     breaks = 15,
+     col = "skyblue", 
+     border = "white",
+     main = "Distribution of Annual Incomes",
+     xlab = "Annual Income (thousands $)",
+     ylab = "Frequency")
+
+# Add vertical line for mean
+abline(v = mean_income, col = "red", lwd = 2)
+
+# Add text label for mean
+text(mean_income + 20, 10, paste("Mean =", round(mean_income)), col = "red")
+```
+
+#### Median
+
+The median of a set of observations is just the middle value. To figure or the median, we first sort the values in ascending order and then we find the middle value. For example, the median of the sequence of numbers below is 32.
+
+8, 12, **32**, 56, 68
+
+If we have an even number of values, then we first find the middle 2 values and the average of them is the median. So, the median of the sequence of numbers below is 26.
+
+8, 12, **20, 32**, 56, 68
+
+Median would be particularly useful when examining a skewed dataset because it is more robust against the few extreme values.
+
+```{r}
+# Calculate article length
+dataset$article_length <- nchar(dataset$article)
+
+# Calculate median and mean
+median_length <- median(dataset$article_length)
+mean_length <- mean(dataset$article_length)
+
+# Create histogram
+hist(dataset$article_length, 
+     breaks = 30,
+     col = "lightblue", 
+     border = "white",
+     main = "Distribution of Article Lengths (1938-1945)",
+     xlab = "Article Length (Characters)",
+     ylab = "Frequency")
+
+# Add vertical line for median
+abline(v = median_length, col = "darkgreen", lwd = 2)
+
+# Add vertical line for mean
+abline(v = mean_length, col = "red", lwd = 2, lty = 2)
+
+# Add legend
+legend("topright", 
+       legend = c(paste("Mean =", round(mean_length)),
+                 paste("Median =", median_length)),
+       col = c("red", "darkgreen"),
+       lty = c(2, 1),
+       lwd = c(2, 2))
+```
+
+#### Mode
+
+The mode is the value that occurs most frequently in a dataset. Mode is used when the variable under investigation is a nominal/categorical variable. For example, if we want to know which newspaper dominates this dataset, i.e. which newspaper has the most articles in this dataset, we can get the mode from the `newspaper_name` variable.
+
+```{r}
+# Calculate frequency of articles by newspaper
+newspaper_counts <- table(dataset$newspaper_name)
+
+# Sort newspapers by count (descending)
+sorted_counts <- sort(newspaper_counts, decreasing = TRUE)
+
+# Get the top 10 newspapers
+top_papers <- sorted_counts[1:10]
+
+# Create a vertical bar chart
+par(mar = c(10, 4, 4, 2) + 0.1)  # Increase bottom margin for labels
+
+barplot(top_papers, 
+        main = "Top 10 Newspapers by Article Count (1938-1945)",
+        ylab = "Number of Articles",
+        col = "steelblue",
+        las = 2,          # Make axis labels perpendicular to axis
+        cex.names = 0.8)  # Adjust text size for newspaper names
+```
+
+In summary, mean is best used to describe an interval/ratio variable in cases where the distribution of the values of that variable is quite balanced around the mean with no obvious skewness and no extreme values which will greatly influence the mean; Median only concerns with the ordering information and therefore is best used for ordinal/interval/ratio variables. When the distribution of an interval/ratio variable is greatly skewed, the mean is not an accurate representation of the data because it is affected by the skewness and you will want to use median in such cases. Mode is used when the variable is not an interval/ratio variable but a distinct nominal/categorical variable. There are some cases in which you might want to get the mode of an ordinal/interval/ratio variable. For example, from a dataset of annual income, your friend picks a random person and ask you to guess the person's annual income. In this case, it is the mode that you should bet on to maximize the change to win.
+
+#### Range
+
+Except the central tendency, which is used to talk about which values are in the middle or popular in the data, we can also use other statistics to describe the variability of the data, i.e. how "spread out" are the data.
+
+Range is the simplest measure of variability. It is simply subtracting the min value of a variable from its max value.
+
+```{r}
+# Calculate range of article length
+min_length <- min(dataset$article_length, na.rm = TRUE)
+max_length <- max(dataset$article_length, na.rm = TRUE)
+range_length <- max_length - min_length
+
+# Display results
+cat("Minimum article length:", min_length, "characters\n")
+cat("Maximum article length:", max_length, "characters\n")
+cat("Range:", range_length, "characters\n")
+```
+
+Range is highly sensitive to outliers - a single unusually long wartime special report could greatly inflate the range.
+
+**Interquartile range** is more robust against outliers as it gives the range of the middle 50% values. The interquartile range (IQR) calculates the diﬀerence between the 25th quantile and the 75th quantile. You may already know what a quantile is (they are commonly called percentiles). If not, the 10th percentile of a data set is the smallest number *x* such that 10% of the data is less than *x.*
+
+```{r}
+# Calculate quartiles and IQR
+q1 <- quantile(dataset$article_length, 0.25, na.rm = TRUE)
+q3 <- quantile(dataset$article_length, 0.75, na.rm = TRUE)
+iqr <- q3 - q1
+
+# Display results
+cat("First quartile (Q1):", q1, "characters\n")
+cat("Third quartile (Q3):", q3, "characters\n")
+cat("Interquartile range (IQR):", iqr, "characters\n")
+```
+
+The interquartile range tells you the spread of the middle 50% of articles. This gives a better picture of the typical variation in article length that readers would encounter, filtering out both unusually short notices and exceptionally long features.
+
+#### Variance and standard deviation
+
+Variance and standard deviation quantify the average distance from the mean. We've talked about in what cases the mean is an appropriate summary statistic describing a dataset. Since variance and standard deviation quantify the averge distance from the mean, we should keep in mind that these two statistics are useful when the mean is appropriate to summarize the dataset.
+
+The variance is calculated using:
+
+$$\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (x_i - \bar{x})^2$$
+
+The standard deviation is calculated using:
+
+$$\sigma = \sqrt{\frac{1}{n-1} \sum_{i=1}^{n} (x_i - \bar{x})^2}$$
+
+Where:
+
+$\sigma^2$ : the variance
+
+$\sigma$ : the standard deviation
+
+$n$ : the number of observations
+
+$x_i$ : each individual value
+
+$\bar{x}$ : the mean of all values
+
+```{r}
+# Calculate variance and standard deviation of the average word length
+var_avg_wl <- var(dataset$avg_word_length, na.rm = TRUE)
+sd_avg_wl <- sd(dataset$avg_word_length, na.rm = TRUE)
+
+# Print results
+cat("Mean of average word length:", round(mean_wl, 2), "characters\n")
+cat("Variance of average word length:", round(var_avg_wl, 2), "characters²\n")
+cat("Standard deviation of average word length:", round(sd_avg_wl, 2), "characters\n")
+```
+
+The standard deviation doesn’t have a simple interpretation. You might have encountered a simple rule of thumb before when you read about statistics: in general, you should expect 68% of the data to fall within 1 standard deviation of the mean, 95% of the data to fall within 2 standard deviation of the mean, and 99.7% of the data to fall within 3 standard deviations of the mean. This rule actually only applies when the following assumption is satisfied: the histogram is symmetric and “bell shaped”. We will talk more about this assumption Wednesday and Friday.
+
+#### Skewness
+
+We talked about how the rule of thumb involving standard deviation relies on an assumption of the shape of the histogram, i.e. the histogram is symmetric and "bell shaped". Now, there is a statistic used to measure the asymmetry of the distribution, that is, skewness.
+
+If the dataset has a lot of extreme small values and not so many extremely large values, then the data are negatively skewed. If there are a lot of extremely large values and not so many extremely small ones, then the data are positively skewed.
+
+```{r}
+# install the e1071 package to calculate skewness
+install.packages("e1071") 
+```
+
+```{r}
+# Load the e1071 package for skewness function
+library(e1071)
+
+# Calculate article length
+dataset$article_length <- nchar(dataset$article)
+
+# Calculate skewness
+skew_score <- skewness(dataset$article_length, na.rm = TRUE)
+
+# Calculate median and mean for comparison
+median_length <- median(dataset$article_length)
+mean_length <- mean(dataset$article_length)
+
+# Print results
+cat("Skewness score:", round(skew_score, 3), "\n")
+cat("Mean article length:", round(mean_length, 0), "characters\n")
+cat("Median article length:", median_length, "characters\n")
+```
+
+We have a positive skewness score (\>0). This means, the distribution has a longer tail to the right. There are many shorter articles and fewer very long articles. The few longer articles pull the mean to the right and this is why the mean is bigger than the median.
+
+### Exercise 2
+
+It's your turn! Below is a dataset representing final exam scores (out of 100 points) for 40 students in an advanced statistics course. This particular course had excellent instruction and most students performed very well, but a few students struggled significantly.
+
+```{r}
+# Create exam scores dataset
+scores <- c(
+  # High performers (majority of students)
+  97, 95, 93, 96, 92, 94, 90, 91, 89, 93,
+  94, 88, 92, 95, 87, 91, 93, 90, 89, 94,
+  92, 90, 88, 91, 95, 89, 93, 86, 91, 88,
+  
+  # Medium performers
+  82, 84, 79, 83, 80,
+  
+  # Low performers (minority of students)
+  65, 58, 52, 47, 42
+)
+
+# Create a data frame
+exam_data <- data.frame(student_id = 1:40, exam_score = scores)
+
+# Display first few rows
+head(exam_data)
+
+# Calculate descriptive statistics
+mean_score <- mean(exam_data$exam_score)
+median_score <- median(exam_data$exam_score)
+```
+
+-   What is the variable "exam_score" in terms of data type? (nominal, ordinal, interval, or ratio)
+
+    ```{r}
+    # Create histogram of exam scores
+    hist(exam_data$exam_score, 
+         breaks = 10,
+         col = "skyblue", 
+         border = "white",
+         main = "Distribution of Final Exam Scores",
+         xlab = "Exam Score (out of 100)",
+         ylab = "Frequency")
+
+    # Add vertical lines for mean and median
+    abline(v = mean_score, col = "red", lwd = 2, lty = 2)
+    abline(v = median_score, col = "blue", lwd = 2)
+
+    # Add legend
+    legend("topleft", 
+          legend = c(paste("Mean =", round(mean_score, 1)),
+                    paste("Median =", median_score)),
+          col = c("red", "blue"),
+          lty = c(2, 1),
+          lwd = c(2, 2))
+    ```
+
+-   Based on your visualization, is the distribution symmetric or skewed?
+
+-   Would the mean or median better represent the "typical" exam score? Why?
+
+-   What does the relationship between mean and median tell you about the skewness?
+
+    ```{r}
+    # calculate the skewness score
+
+    ```
+
+-   What real-world interpretation can you give for this skewness in the context of exam performance?
+
+#### Visualizations for describing data
+
+##### Histogram
+
+Histograms are one of the most useful ways of visualizing data. You will want to use a histogram when you want to get an overall impression of an interval or a ratio variable. When you plot a histogram, you divide up the values into bins, and then count the number of values that fall into each bin. The count is referred to as the frequency of the bin and is displayed as a bar. We've seen some histograms in the previous sections, but here is one more example.
+
+Suppose we would like to investigate how newspaper coverage and attention changes over time during WWII especially with regard to the key WWII events, such as: Pearl Harbor attack (December 7, 1941), D-Day invasion (June 6, 1944), and VE Day (May 8, 1945). We can create a variable "days elapsed" which records how many days has elapsed from the minimal date in the dataset and then calculate the number of newspaper articles by "days elapsed". Since "days elapsed" can be seen as a ratio variable in this case, we can plot a histogram to help us understand potential reporting spikes around major military events, policy announcements, or home front developments.
+
+```{r}
+# Convert date strings to Date objects
+dataset$date_obj <- as.Date(dataset$date)
+
+# Calculate days since the earliest date in the dataset
+dataset$days_elapsed <- as.numeric(dataset$date_obj - min(dataset$date_obj))
+
+# Plot histogram
+library(ggplot2)
+ggplot(dataset, aes(x = days_elapsed)) +
+  geom_histogram(binwidth = 30, fill = "steelblue", color = "black") +
+  labs(
+    title = "Distribution of articles by days elapsed",
+    x = "Days since first article in the dataset",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5)  # This centers the title
+  )
+```
+
+##### Bar graphs
+
+A bar graph is very similar to a histogram. The only difference is that the variable on the *x* axis is a nominal/ordinal variable, not an interval/ratio variable.
+
+Let's use the same bar graph we have seen before again.
+
+```{r}
+# Count the frequency of each newspaper in the dataset
+newspaper_counts <- table(dataset$newspaper_name)
+
+# Sort in descending order to see the most frequent newspapers
+sorted_counts <- sort(newspaper_counts, decreasing = TRUE)
+
+# Take the top 10 most frequent newspapers for better visualization
+top_10 <- sorted_counts[1:10]
+
+# Create a bar plot
+barplot(top_10,
+        main = "Top 10 Newspapers in the AmericanStories Dataset (1938-1945)",
+        xlab = "Number of Articles",
+        col = "steelblue",
+        horiz = TRUE,   # Horizontal bars for better label visibility
+        las = 1,        # Make axis labels horizontal
+        cex.names = 0.8) # Adjust text size for newspaper names
+```
+
+##### Boxplots
+
+Boxplots are most suited to describe an interval/ratio variable. Boxplots can display the median, the interquartile range and the range of a dataset, all in one plot. They are very popular in the exploratory data analysis. In a boxplot. the thick line in the middle of the box is the median. The box itself spans from the 25th percentile to the 75th percentile and the whiskers go as far as the most extreme data point which does not exceed a certain bound, usually 1.5 times the interquartile range. Any value that is outside this range is plotted as a circle and is referred to as an outlier.
+
+```{r}
+# Calculate article length if not already done
+dataset$article_length <- nchar(dataset$article)
+
+# Create a box plot
+boxplot(dataset$article_length,
+        main = "Distribution of Article Lengths (1938-1945)",
+        ylab = "Article Length (Characters)",
+        col = "lightblue")
+
+# Add a grid for easier reading
+grid()
+
+# Add mean point for comparison
+points(1, mean(dataset$article_length), col = "red", pch = 19)
+```
+
+#### Exercise 3
+
+It is your turn! Below is a dataset of three course sections and the study hours students spend on them.
+
+```{r}
+# Create study time dataset
+set.seed(123)
+
+# Create data for three course sections with different study patterns
+section_A <- c(2.5, 3.0, 2.8, 3.5, 1.5, 2.2, 3.8, 2.7, 3.2, 2.0, 1.8, 4.0, 2.5, 3.3, 2.9)
+section_B <- c(4.5, 5.2, 4.8, 6.1, 7.0, 4.9, 6.5, 5.5, 7.2, 8.0, 5.8, 6.2, 4.7, 5.0, 6.8)
+section_C <- c(0.5, 3.7, 2.0, 5.5, 1.2, 7.5, 4.2, 0.8, 6.5, 3.0, 8.2, 2.5, 9.0, 4.5, 1.5)
+
+# Combine into a data frame
+study_data <- data.frame(
+  student_id = 1:45,
+  section = rep(c("Section A", "Section B", "Section C"), each = 15),
+  study_hours = c(section_A, section_B, section_C)
+)
+
+# Display first few rows
+head(study_data)
+```
+
+```{r}
+# Basic box plot of study hours by section
+boxplot(study_hours ~ section, data = study_data,
+        main = "Distribution of Study Hours by Course Section",
+        xlab = "Course Section",
+        ylab = "Hours Spent Studying",
+        col = c("lightblue", "lightgreen", "lightsalmon"))
+
+# Add grid for easier reading
+grid()
+```
+
+-   Which section has the highest median study time?
+
+-   Which section shows the greatest variability in study hours?
+
+-   Which section's distribution appears to be most symmetric?
+
+```{r}
+# Calculate summary statistics by section
+tapply(study_data$study_hours, study_data$section, summary)
+
+# Calculate standard deviation by section
+tapply(study_data$study_hours, study_data$section, sd)
+```
+
+## Lesson Complete
+
+Congratulations! You have completed *Introduction to statistics using R 1.* There are two more lessons in *R Basics:*
+
+-   [Introduction to statistics using R 2](./R-basics-2.Rmd)
+
+-   [Introduction to statistics using R 3](./R-basics-3.Rmd)
+
+### Start Next Lesson: [Introduction to statistics using R 2](./R-basics-2.Rmd)
+
+### Exercise Solutions
+
+#### Exercise 1 solution
+
+The data is positively skewed. The mean is not an accurate summary statistic of the dataset. The median is a more robust statistic describing the central tendency in this case.
+
+#### Exercise 2 solution
+
+The variable `exam_score` is a ratio variable.
+
+The distribution is skewed.
+
+The median is a better statistic to represent the typical exam score.
+
+```{r}
+# Calculate skewness
+skew <- skewness(exam_data$exam_score, na.rm = TRUE)
+
+# Print results
+cat("Skewness score:", round(skew, 3), "\n")
+```
+
+The skewness tells us that the distribution has a long left tail. Most students perform very well, and a few students struggle. The mean is pulled to the left because of the struggling students. The median is more appropriate measure to represent the central tendency because it better represents the typical student performance.
+
+#### Exercise 3 solution
+
+-   Section B has the highest median study time.
+
+-   Section C shows the biggest variability in study time.
+
+-   Section A's distribution seems to be the most symmetric.
+
+## References
+
+Learning Statistics with R: <https://learningstatisticswithr.com/>

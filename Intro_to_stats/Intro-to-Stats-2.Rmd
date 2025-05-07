@@ -1,0 +1,752 @@
+---
+title: "Introduction to statistical analysis using R 2"
+output: 
+  html_notebook:
+    toc: true
+    theme: united
+---
+
+![](https://ithaka-labs.s3.amazonaws.com/static-files/images/tdm/tdmdocs/CC_BY.png "Logo Title Text 1")
+
+Created by Zhuo Chen for [JSTOR Labs](https://labs.jstor.org/) under [Creative Commons CC BY License](https://creativecommons.org/licenses/by/4.0/)
+
+For questions/comments/improvements, email [zhuo.chen\@ithaka.org](mailto:zhuo.chen@ithaka.org)
+
+# Intro to statistical analysis using R - 2
+
+**Description** : This lesson teaches some foundational concepts in statistics with a focus on inferential statistics.
+
+**Use case** : For learners (detailed explanation, not ideal for researchers)
+
+**Difficulty:** Beginner
+
+**Completion time:** 90 minutes
+
+**Knowledge required:** [Introduction to statistics using R 1](./Intro-to-Stats-1.Rmd).
+
+**Knowledge recommended:** [StatQuest with Josh Starmer](https://www.youtube.com/channel/UCtYLUTtgS3k1Fg4y5tAhLbw)
+
+**Data format:** None
+
+**Libraries used:** None
+
+**Research pipeline:** None
+
+## A review of lesson 1
+
+In lesson 1, we learned some foundational concepts in statistics with a focus on descriptive statistics. Specifically, we learned the different types of variables: nominal/ordinal/interval/ratio; we learned the two main descriptions of data: central tendency and variablity; we learned the different visualizations that are suitable for depicting certain types of variables and information: histograms for interval/ratio variables, bar graphs for nominal/ordinal variables and boxplots for visualizing variability. Today, we are going to shift our focus to inferential statistics which allows us to go beyond our immediate **sample** to make broader conclusions about the **population**.
+
+## Today's lesson
+
+In today's lesson, we will talk about some very important concepts. After that, we will see how these concepts are implemented in statistical testing.
+
+The concepts we are going to talk about are:
+
+-   Normal distribution and its properties
+
+-   Z-scores
+
+-   Sample vs. population; Statistics vs. parameters
+
+-   Sampling distribution and the central limit theorem
+
+-   Hypothesis testing
+
+### Foundational concepts in inferential statistics
+
+Before we talk about normal distribution, let's start with the frequency distribution. In lesson 1, we know that from a dataset with interval/ratio values, we can plot a histogram of frequency distribution, i.e. a plot that tells us how frequent each of the value in the dataset occurs. Suppose we have a dataset of 10,000 people and their IQ scores have a frequency distribution as displayed in the following histogram.
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Generate 10,000 IQ scores with mean = 100 and sd = 15
+n <- 10000
+iq_scores <- rnorm(n, mean = 100, sd = 15)
+
+# Round to whole numbers since IQ scores are typically integers
+iq_scores <- round(iq_scores)
+
+# Calculate actual mean and SD
+actual_mean <- mean(iq_scores)
+actual_sd <- sd(iq_scores)
+
+# First histogram: Frequency
+hist(iq_scores, 
+     breaks = seq(40, 160, by = 5),
+     col = "#8884d8",
+     border = "white",
+     main = "IQ Score Distribution (Frequency)",
+     xlab = "IQ Score",
+     ylab = "Frequency",
+     xlim = c(40, 160),
+     las = 1)
+
+# Add a normal curve overlay (scaled to match histogram height)
+curve(dnorm(x, mean = 100, sd = 15) * n * 5, 
+      add = TRUE, 
+      col = "red", 
+      lwd = 2)
+
+# Add vertical lines for mean and standard deviations
+abline(v = 100, col = "red", lty = 2, lwd = 2)
+abline(v = c(85, 115), col = "blue", lty = 3, lwd = 1.5)
+abline(v = c(70, 130), col = "green", lty = 3, lwd = 1.5)
+
+# Add a legend to the first plot
+legend("topright", 
+       legend = c("Histogram", "Normal Curve", "Mean", "±1 SD", "±2 SD"),
+       col = c("#8884d8", "red", "red", "blue", "green"),
+       lty = c(NA, 1, 2, 3, 3),
+       lwd = c(NA, 2, 2, 1.5, 1.5),
+       pch = c(15, NA, NA, NA, NA),
+       pt.cex = 1.5,
+       cex = 0.8,
+       bg = "white")
+```
+
+On the y axis, we get the raw counts of the number of people who fall into each bin in this sample. Since we know the total number of people is 10,000, we can actually calculate the percentage of people that falls into each bin.
+
+```{r}
+# Second histogram: Probability density
+hist(iq_scores, 
+     breaks = seq(40, 160, by = 5),
+     col = "#8884d8",
+     border = "white",
+     main = "IQ Score Distribution (Density)",
+     xlab = "IQ Score",
+     ylab = "Probability Density",
+     xlim = c(40, 160),
+     las = 1,
+     prob = TRUE)  # Use probability density
+
+# Add a normal curve overlay (exact match to theoretical density)
+curve(dnorm(x, mean = 100, sd = 15), 
+      add = TRUE, 
+      col = "red", 
+      lwd = 2)
+
+# Add vertical lines for mean and standard deviations
+abline(v = 100, col = "red", lty = 2, lwd = 2)
+abline(v = c(85, 115), col = "blue", lty = 3, lwd = 1.5)
+abline(v = c(70, 130), col = "green", lty = 3, lwd = 1.5)
+
+# Add the same legend to the second plot
+legend("topright", 
+       legend = c("Histogram", "Normal Curve", "Mean", "±1 SD", "±2 SD"),
+       col = c("#8884d8", "red", "red", "blue", "green"),
+       lty = c(NA, 1, 2, 3, 3),
+       lwd = c(NA, 2, 2, 1.5, 1.5),
+       pch = c(15, NA, NA, NA, NA),
+       pt.cex = 1.5,
+       cex = 0.8,
+       bg = "white")
+
+# Reset to a single plot layout
+par(mfrow = c(1, 1))
+```
+
+This time, we don't get a distribution of the raw counts, but a distribution of probability density. The area of each bin is the percentage of data points that fall into that bin.
+
+Now, let's turn to a very important distribution in statistics - the normal distribution. Here, let's look at two normal distributions with different standard deviations.
+
+### Normal distribution
+
+```{r}
+# Set up the plotting area for two distributions
+par(mfrow = c(1, 2))
+
+# Parameters for the two distributions
+mean_value <- 0
+small_sd <- 0.5
+large_sd <- 2
+
+# Create a sequence of x values
+x <- seq(-6, 6, length.out = 1000)
+
+# Distribution 1: Normal with small standard deviation (more pointed)
+y_small <- dnorm(x, mean = mean_value, sd = small_sd)
+plot(x, y_small, type = "l", col = "blue", lwd = 2,
+     main = "Normal Distribution with Small SD",
+     cex.main = 0.8,
+     xlab = "x", ylab = "Density", 
+     ylim = c(0, 0.8))  # Fixed y-axis scale for comparison
+text(-6, 0.7, paste("Mean =", mean_value, "\nSD =", small_sd), pos = 4)
+
+# Add vertical lines for 1.96 and 2.58 standard deviations (small SD)
+abline(v = c(-1.96 * small_sd, 1.96 * small_sd), col = "purple", lty = 2, lwd = 1.5)
+abline(v = c(-2.58 * small_sd, 2.58 * small_sd), col = "orange", lty = 3, lwd = 1.5)
+
+# Distribution 2: Normal with large standard deviation (more flat)
+y_large <- dnorm(x, mean = mean_value, sd = large_sd)
+plot(x, y_large, type = "l", col = "red", lwd = 2,
+     main = "Normal Distribution with Large SD",
+     cex.main = 0.8,
+     xlab = "x", ylab = "Density", 
+     ylim = c(0, 0.8))  # Same y-axis scale for fair comparison
+text(-4, 0.7, paste("Mean =", mean_value, "\nSD =", large_sd), pos = 4)
+
+# Add vertical lines for 1.96 and 2.58 standard deviations (large SD)
+abline(v = c(-1.96 * large_sd, 1.96 * large_sd), col = "purple", lty = 2, lwd = 1.5)
+abline(v = c(-2.58 * large_sd, 2.58 * large_sd), col = "orange", lty = 3, lwd = 1.5)
+
+# Reset to single plot layout
+par(mfrow = c(1, 1))
+```
+
+##### Properties of normal distributions
+
+-   Bell-shaped curve: the distribution is symmetric around its mean, with the classic "bell curve" shape
+
+-   Mean, median, and mode are all equal: these three measures of central tendency coincide at the same point.
+
+-   68-95-99.7 rule:
+
+    -   68% of the data falls within 1 standard deviation of the mean
+
+    -   95% of the data falls within 1.96 standard deviations of the mean
+
+    -   99% of the data falls within 2.58 standard deviations of the mean
+
+#### Z-scores
+
+The standard score or z-score is the number of standard deviations by which the value of a raw score is above or below the mean, i.e. how many standard deviations a data point is from the mean.
+
+$$
+z = \frac{x-\mu}{\sigma}
+$$
+
+Where:
+
+-   $x$ is the raw value
+
+-   $\mu$ is the mean
+
+-   $\sigma$ is the standard deviation
+
+#### Exercise 1
+
+Now that you know the properties of a normal distribution and what a z-score represents, can you calculate the range precisely 95% of the data falls into for the two normal distributions we saw above?
+
+```{r}
+# calculate the range of the 95% values for the two normal distributions
+
+```
+
+#### **Population vs. Sample**
+
+Suppose we are interested in the average IQ of all 20-year-old. In this case, the **population** we are interested in are all the 20-year-old. However, in the real world, it is very hard to study the entire population. We are probably unable to recruit all the 20-year-old for our study. Therefore, we will only choose a **sample**. We can select 5 people at random and administer an IQ test and then study the results.
+
+-   Population: The complete set (e.g. all 20-year-old)
+
+-   Sample: The subset we're actually analyzing (e.g. 5 randomly selected 20-year-old)
+
+#### **Parameters vs. Statistics**
+
+Our goal is to estimate the properties of the population from the properties of a sample. In inferential statistics, the properties of the population that we are interested in are called **parameters**. The properties of a sample which we use to estimate the properties of the population are called **statistics**. In the IQ test example, we are interested in the average IQ of all 20-year-old. The mean IQ score of all 20-year-old is a **parameter** of the population that we try to study. Since we are unable to study the entire population, we choose to study a sample of 5 randomly selected 20-year-old and get the average IQ score of this sample. The mean IQ score of the 5 20-year-old is a **statistic** of the sample.
+
+-   Parameters: the values describing the population
+
+-   Statistics: the values calculated from our sample (estimates of parameters)
+
+In lesson 1, we have learned that when we describe data, there are two main things we can describe: the central tendency and the variability (specifically, we talked about mean, median and mode for the central tendency; we talked about variance and standard deviation for the variability). These two things are also important in inferential statistics since they are used to describe the properties of a population or a sample. For example, we use the mean of a sample to estimate the mean of the population; we use the variance/standard deviation of the sample to estimate the variance/standard deviation of the population.
+
+| Symbol | What is it? | Formula |
+|------------------------|------------------------|------------------------|
+| $$      
+ \bar X   
+ $$ | Sample mean | $$
+\bar X = \frac{1}{N}\sum_{i=1}^{N}X_{i}
+$$ |
+| $$      
+ \mu      
+ $$ | True population mean | Usually unknown |
+| $$      
+ \hat\mu  
+ $$ | Estimate of the population mean | $$
+\bar X
+$$ |
+| $$s
+$$ | Sample standard deviation | $$s = \sqrt{\frac{1}{N}\sum^{N}_{i=1}(X_{i}-\bar{X})^{2}}
+$$ |
+| $$
+\sigma
+$$ | Population standard deviation | Usually unknown |
+| $$
+\hat\sigma
+$$ | Estimate of the population standard deviation | $$\hat\sigma = \sqrt{\frac{1}{N-1}\sum^{N}_{i=1}(X_{i}-\bar{X})^{2}}
+$$ |
+| $$
+s^{2}
+$$ | Sample variance | $$s^{2} = \frac{1}{N}\sum^{N}_{i=1}(X_{i}-\bar{X})^{2}
+$$ |
+| $$
+\sigma^{2}
+$$ | Population variance | Usually unknown |
+| $$
+\hat\sigma^{2}
+$$ | Estimate of the population variance | $$\hat\sigma = \frac{1}{N-1}\sum^{N}_{i=1}(X_{i}-\bar{X})^{2}
+$$ |
+
+Note that in the estimation of the population variance and standard deviation, we change the denominator from $N$ to $N-1$. Why do we make this change? I will not go into the mathematical details here, but if you are interested, you can check out this [video](https://www.youtube.com/watch?v=bVB4X5CUWTg&t=1023s).
+
+#### **Sampling distribution and the central limit theorem**
+
+##### Sampling distribution
+
+But how do we estimate the parameters of a population using the statistics of a sample? A sample is just a subset of the population. How do we make sure that we are not making crazy inferences about the population with the limited sample data? To answer this question, we will need to understand sampling distribution and the central limit theorem first.
+
+For any sample statistic, it has a sampling distribution. The sampling distribution is obtained by replicating the procedure to collect the sample statistic. In the IQ test example, we randomly sample 5 people and get the mean IQ score. We can replicate the procedure and randomly sample 5 new people and get the mean IQ again. If I repeat this 10 times, we will get 10 sample means, as the following table shows.
+
+|                | Person 1 | Person 2 | Person 3 | Person 4 | Person 5 | Sample Mean |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| Replication 1  | 90       | 82       | 94       | 99       | 110      | 95          |
+| Replication 2  | 78       | 88       | 111      | 111      | 117      | 101         |
+| Replication 3  | 111      | 122      | 91       | 98       | 86       | 101.6       |
+| Replication 4  | 98       | 96       | 119      | 99       | 107      | 103.8       |
+| Replication 5  | 105      | 113      | 103      | 103      | 98       | 104.4       |
+| Replication 6  | 81       | 89       | 93       | 85       | 114      | 92.4        |
+| Replication 7  | 100      | 93       | 108      | 98       | 133      | 106.4       |
+| Replication 8  | 107      | 100      | 105      | 117      | 85       | 102.8       |
+| Replication 9  | 86       | 119      | 108      | 73       | 116      | 100.4       |
+| Replication 10 | 95       | 126      | 112      | 120      | 76       | 105.8       |
+
+```{r}
+# Sample mean IQs
+iq_means <- c(95, 101, 101.6, 103.8, 104.4, 92.4, 106.4, 102.8, 100.4, 105.8)
+
+# Create histogram with customization
+hist(iq_means, 
+     breaks = seq(90, 115, by = 3),  # Define bins from 90 to 110 in steps of 3
+     col = "skyblue", 
+     border = "white",
+     main = "Histogram of Sample Mean IQs (n=5)",
+     xlab = "IQ Sample Means",
+     ylab = "Frequency")
+
+# Add a vertical line for the mean
+abline(v = mean(iq_means), col = "red", lwd = 2, lty = 2)
+
+# Add text for mean value
+text(mean(iq_means) + 2, 3.5, 
+     paste("Mean =", round(mean(iq_means), 2)),
+     col = "red")
+```
+
+You could imagine that we can repeat this procedure 10,000 times and draw a histogram of the sample means. As a result, we will get a distribution of the sample means, which is called, the **sampling distribution of the mean**.
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Number of simulations
+n_simulations <- 10000
+
+# Sample size
+sample_size <- 5
+
+# Parameters of the IQ distribution
+mu <- 100  # Mean
+sigma <- 15  # Standard deviation
+
+# Create a vector to store the 10,000 sample means
+sample_means <- numeric(n_simulations)
+
+# Run the simulation
+for (i in 1:n_simulations) {
+  # Randomly select 5 IQ scores from the normal distribution
+  iq_sample <- rnorm(sample_size, mean = mu, sd = sigma)
+  
+  # Calculate and store the mean of this sample
+  sample_means[i] <- mean(iq_sample)
+}
+
+# Create a histogram with adjusted margins to make room for the legend
+par(mar = c(5, 4, 4, 8))  # Increase right margin
+
+hist(sample_means, 
+     breaks = 30, 
+     col = "skyblue", 
+     border = "white",
+     main = "Distribution of Mean IQ Scores\n(10,000 samples of 5 people each)",
+     xlab = "Mean IQ Score", 
+     ylab = "Frequency")
+
+# Add a vertical line at the population mean (100)
+abline(v = mu, col = "red", lwd = 2)
+
+# Add a normal curve that represents the sampling distribution
+curve(dnorm(x, mean = mu, sd = sigma/sqrt(sample_size)) * length(sample_means) * (max(sample_means) - min(sample_means)) / 30,
+      add = TRUE, col = "darkblue", lwd = 2)
+
+# Add a legend in the top right outside the plot
+legend("topright", 
+       legend = c("Histogram of sample means", "Population mean", "Theoretical normal curve"),
+       fill = c("skyblue", NA, NA),
+       col = c(NA, "red", "darkblue"),
+       lwd = c(NA, 2, 2),
+       border = c("white", NA, NA),
+       xpd = TRUE,     # Allow plotting outside the plot region
+       inset = c(-0.2, 0))  # Move it to the right
+
+# Print summary statistics
+cat("Summary of sample means:\n")
+summary(sample_means)
+cat("\nStandard deviation of sample means:", sd(sample_means), "\n")
+cat("Theoretical standard error (σ/√n):", sigma/sqrt(sample_size), "\n")
+
+# Reset the plot parameters
+par(mar = c(5, 4, 4, 2) + 0.1)
+```
+
+##### Central limit theorem
+
+As we saw before, when we take different samples, we get different sample means. This illustrates sampling variation. Samples vary because they contain different members of the population. When we replicate the procedure and draw many many different samples from the population and get the sample means, we get a frequency distribution of sample means.
+
+Central limit theorem is about the sampling distribution. It states that as samples get large (usually defined as $\geq$ 30), the sampling distribution has a normal distribution with a mean equal to the population mean and a standard deviation of $$
+SEM = \frac{\sigma}{\sqrt{N}}
+$$
+
+Where:
+
+$\sigma$ : the standard deviation of the population
+
+$N$ : the sample size\
+\
+The sampling distribution centers at the same value as the mean of the population. This means, if we take the average of all sample means we would get the value of the population mean. If we calculate the standard deviation between sample means, then this would give us a measure of how much variability there was between the means of different samples. The standard deviation of sample means is known as the **standard error of the mean (SEM)**.
+
+When we don't have the population standard deviation, we use the sample standard deviation to estimate the population standard deviation. In this case, we calculate the standard error of the mean using
+
+$$
+SEM = \frac{\hat\sigma}{\sqrt{N}}
+$$
+
+Where:
+
+$\hat\sigma$ : the estimate of the standard deviation of the population
+
+$N$ : the sample size
+
+The estimate of the standard deviation of the population is\
+$$\hat\sigma = \sqrt{\frac{1}{N-1}\sum^{N}_{i=1}(X_{i}-\bar{X})^{2}}
+$$
+
+#### Quantify uncertainty of the estimate
+
+Every dataset leaves us with some uncertainty. This means, our estimates of the population parameters will not be perfectly accurate. How can we quantify the amount of uncertainly of our estimates? For example, it would be great if we can say something like "there is a 95% chance that the true mean IQ is between 109 and 121" in our IQ test example. This quantification of uncertainly is called **confidence interval**.
+
+With the understanding of sampling distribution and central limit theorem, we can easily construct a confidence interval for the mean. Recall the following symbols and what they represent.
+
+$\mu$: the population mean
+
+$\sigma$ : the standard deviation of the population
+
+$N$ : the sample size
+
+$\bar X$: the sample mean
+
+$SEM$: $\frac{\sigma}{\sqrt N}$
+
+From the central limit theorem, we know that the sampling distribution of the mean is approximately normal (when the sample size is large). In a normal distribution, there is a 95% chance that a normally distributed quantity will fall within 1.96 standard deviations of the true mean. Putting together, we know that there is a 95% probability that the sample mean $\bar X$ lies within 1.96 standard errors of the population mean.
+
+$$\mu - (1.96\times SEM)\leq \bar X\leq \mu + (1.96\times SEM)
+$$
+
+Doing some simple algebra, we get
+
+$$
+\bar X - (1.96\times SEM)\leq\mu\leq\bar X+(1.96\times SEM)
+$$
+
+This range has a 95% probability of containing the population mean $\mu$. We call this range **95% confidence interval**.
+
+$$
+CI_{95} = \bar X\pm(1.96\times\frac{\sigma}{\sqrt N})
+$$
+
+When we talked about sampling distribution, we were talking about replicating the sampling to get a sample mean. Since the confidence interval is an interval on the sampling distribution, the interpretation of a 95% confidence interval has something to do with replication. Specifically: if we replicated the sampling over and over again to get the sample mean and computed a 95% confidence interval for each replication, then 95% of those intervals would contain the true population mean. 
+
+#### Exercise 2
+
+Suppose we have a sample of 30 people's IQ scores. Could you calculate the 95% CI for the mean?
+
+```{r}
+# Input the raw scores
+iq_scores <- c(87, 94, 105, 101, 85, 90, 115, 112, 93, 79, 82, 96, 86, 101, 76, 
+               114, 97, 103, 85, 106, 72, 108, 93, 88, 117, 90, 83, 94, 78, 110, 
+               95, 107, 89, 92, 104, 81, 98, 116, 80, 99, 91, 103, 74, 111, 84, 
+               102, 96, 77, 109, 95)
+
+# Check mean and standard deviation
+mean_iq <- mean(iq_scores) # mean value of the sample data
+sd_iq <- sd(iq_scores) # standard deviation of the sample data
+n <- length(iq_scores) # sample size
+se <- sd_iq / sqrt(n) # standard error
+
+# Print results
+cat("Sample size:", n, "\n")
+cat("Sample mean:", mean_iq, "\n")
+cat("Sample SD:", sd_iq, "\n")
+cat("Standard error:", se, "\n\n")
+```
+
+#### Hypothesis testing
+
+Researchers have a theory about the world, then they collect some data and want to test if the data actually support their theory.
+
+##### Null hypothesis and alternative hypothesis
+
+Null hypothesis: $H_{0}$ is the exactly opposite to what you are trying to find evidence to support. E.g. Suppose you are finding evidence to support there is life on Mars, then $H_{0}$ is there does not exist life on Mars.
+
+Alternative hypothesis: $H_{1}$ is the opposite to the null hypothesis. E.g. In the life on Mars example, $H_{1}$ is there exists life on Mars.
+
+The goal of hypothesis testing is to show that the null hypothesis is probably false. To quote Danielle Navarro's analogy here "The best way to think about it, in my experience, is to imagine that a hypothesis test is a criminal trial... the trial of the null hypothesis. The null hypothesis is the defendant, the researcher is the prosecutor, and the statistical test itself is the judge. Just like a criminal trial, there is a presumption of innocence: the null hypothesis is deemed to be true unless you, the researcher, can prove beyond a reasonable doubt that it is false. You are free to design your experiment however you like (within reason, obviously!), and your goal when doing so is to maximize the chance that the data will yield a conviction...for the crime of being false. The catch is that the statistical test sets the rules of the trial, and those rules are designed to protect the null hypothesis – specifically to ensure that if the null hypothesis is actually true, the chances of a false conviction are guaranteed to be low. This is pretty important: after all, the null hypothesis doesn’t get a lawyer. And given that the researcher is trying desperately to prove it to be false, someone has to protect it."
+
+There are two types of errors in statistical hypotheses testing.
+
+|   | retain $H_{0}$ | reject $H_{0}$ |
+|------------------------|------------------------|------------------------|
+| $H_{0}$ is true | $$              
+                    \checkmark       
+                    $$ | error (type I) |
+| $H_{0}$ is false | error (type II) | $$             
+                                      \checkmark      
+                                      $$ |
+
+##### Significance level
+
+The most important design principle of the hypothesis test is to control the probability of a type I error. That is, we are very careful in keeping the null hypothesis - not rejecting it - when the evidence from the sample at hand is not strong enough. We are trying to keep the probability of type I error below a certain level, which is called the significance level of the test. A hypothesis test is said to have significance level $\alpha$ if the type I error rate is no larger than $\alpha$.
+
+#### Mean - the simplest statistical model
+
+The simplest model we can fit to a dataset is the mean, i.e. we use the mean of the data to represent the dataset. Using what we have learned about the sampling distribution, normal distribution, central limit theorem, z-scores and hypothesis testing, we can put them all together into one example to see how a statistical test works.
+
+Suppose a cereal company claims that its boxes contain 500g of cereal. Of course, not every box will be exactly 500g and let's say the population mean $\mu$ is 500g and the population standard deviation $\sigma$ is 15. Now, you suspect the company made a false claim and they actually do not put the claimed quantity 500g into a box. How do you decide if the company makes a false claim?
+
+Suppose we have collected a sample of 50 boxes of cereal and the mean of the sample $\bar X$ is 495g.
+
+$H_{0}$ : The company did not make a false claim, i.e. the sample is likely from the claimed population.
+
+$H_{1}$: The company made a false claim, i.e. the sample is not likely from the claimed population.
+
+According to the central limit theorem, we know that if we repeat the sampling many many times, we will get a normal distribution of the sample means (note that we collect 50 boxes each time if we repeat this sampling procedure and 50 is regarded as a big sample size); Moreover, the sampling distribution has a mean that is equal to the population mean - 500. And it has a standard deviation (i.e. standard error of the mean) of $\sigma/\sqrt{N} = 15/\sqrt{50}$. According to the properties of the normal distribution, we can calculate the z-score of the sample mean. If the z-score is bigger than 1.96 or smaller than -1.96, then that means the probability that the sample comes from the claimed distribution is smaller than 5% and therefore, we will reject the null hypothesis and come to the conclusion that the company has made a false claim.
+
+```{r}
+se = 15/sqrt(50) # standard deviation of the sampling distribution of the mean, i.e. SEM
+z = (495-500)/se 
+print(z)
+```
+
+-2.357023 is smaller than -1.96! This means, if the null hypothesis is true, the probability that we get a sample mean the same as the mean of the sample at hand is smaller than 0.05. Therefore, we will reject the null hypothesis, which states that the sample comes from the claimed population, and conclude that the company made a false claim!
+
+```{r}
+# Set up parameters
+claimed_mean <- 500    # Claimed population mean (in grams)
+claimed_sd <- 15       # Claimed population standard deviation (in grams)
+sample_mean <- 495     # Sample mean from your 50 boxes (in grams)
+sample_size <- 50      # Number of boxes in your sample
+alpha <- 0.05          # Significance level
+
+# Calculate standard error of the sampling distribution
+se <- claimed_sd / sqrt(sample_size)
+
+# Calculate z-score for sample mean
+z_score <- (sample_mean - claimed_mean) / se
+
+# Calculate critical z-scores for two-tailed test
+z_critical_lower <- qnorm(alpha/2)
+z_critical_upper <- qnorm(1 - alpha/2)
+
+# Calculate p-value
+p_value <- 2 * pnorm(abs(z_score), lower.tail = FALSE)
+
+# Create a sequence of values for the sampling distribution
+x <- seq(claimed_mean - 4*se, claimed_mean + 4*se, length.out = 1000)
+y <- dnorm(x, mean = claimed_mean, sd = se)
+
+# Adjust the margins to make room for the legend on the right
+# The order is: bottom, left, top, right
+par(mar = c(5, 4, 4, 10))  # Increased right margin from 8 to 10
+
+# Create the plot
+plot(x, y, type = "l", lwd = 2, col = "blue",
+     xlab = "Sample Mean Weight (grams)",
+     ylab = "Probability Density",
+     main = "Sampling Distribution of Mean Cereal Box Weight")
+
+# Add vertical line for the claimed mean
+abline(v = claimed_mean, col = "black", lwd = 2)
+
+# Add vertical line for the sample mean
+abline(v = sample_mean, col = "red", lwd = 2)
+
+# Shade the critical regions
+critical_lower_x <- seq(min(x), claimed_mean + z_critical_lower*se, length.out = 200)
+critical_upper_x <- seq(claimed_mean + z_critical_upper*se, max(x), length.out = 200)
+
+critical_lower_y <- dnorm(critical_lower_x, claimed_mean, se)
+critical_upper_y <- dnorm(critical_upper_x, claimed_mean, se)
+
+polygon(c(critical_lower_x, rev(critical_lower_x)), 
+        c(critical_lower_y, rep(0, length(critical_lower_y))), 
+        col = rgb(1, 0, 0, 0.3), border = NA)
+
+polygon(c(critical_upper_x, rev(critical_upper_x)), 
+        c(critical_upper_y, rep(0, length(critical_upper_y))), 
+        col = rgb(1, 0, 0, 0.3), border = NA)
+
+# Add vertical lines for critical values
+critical_lower_value <- claimed_mean + z_critical_lower*se
+critical_upper_value <- claimed_mean + z_critical_upper*se
+
+abline(v = critical_lower_value, col = "darkred", lty = 2, lwd = 2)
+abline(v = critical_upper_value, col = "darkred", lty = 2, lwd = 2)
+
+# Add legend completely outside the plot
+legend(x = "right", 
+       legend = c("Sampling Distribution", "Population Mean (500g)",
+                 "Sample Mean (495g)", "Critical Regions (α = 0.05)"),
+       col = c("blue", "black", "red", rgb(1, 0, 0, 0.3)),
+       lwd = c(2, 2, 2, 10),
+       bty = "n",
+       xpd = TRUE,    # Allow plotting outside the figure region
+       inset = c(-0.4, 0))  # Adjusted inset to move legend further right
+
+# Reset the plotting parameters for subsequent plots
+par(mar = c(5, 4, 4, 2) + 0.1)  # Reset to default margins
+```
+
+```{r}
+# # Print calculations
+cat("Hypothesis Test for Cereal Box Weights\n")
+cat("-------------------------------------\n")
+cat("Null Hypothesis (H₀): μ = 500g (Boxes match the claimed weight)\n")
+cat("Alternative Hypothesis (H₁): μ ≠ 500g (Boxes don't match the claimed weight)\n\n")
+cat("Claimed population mean:", claimed_mean, "g\n")
+cat("Claimed population standard deviation:", claimed_sd, "g\n")
+cat("Sample mean (n = 50):", sample_mean, "g\n")
+cat("Standard error of the mean:", round(se, 3), "g\n\n")
+cat("Z-score:", round(z_score, 3), "\n")
+cat("Critical z-values (α = 0.05):", round(z_critical_lower, 3), "and", round(z_critical_upper, 3), "\n")
+cat("P-value:", round(p_value, 4), "\n\n")
+```
+
+#### Exercise 3
+
+It's your turn!
+
+A machine is designed to produce bolts with a mean length of 50mm, i.e. $\mu=50$. The population standard deviation is known from years of production $\sigma=0.5$. You want to check if the machine is miscalibrated and have sampled 50 bolts. The sample mean $\bar X=50.2$.
+
+```{r}
+# is the machine miscalibrated? 
+
+```
+
+#### Two-tail test vs one-tail test
+
+You may have noticed that when we did the cereal example, the critical region we examined are the two tails of the sampling distribution. This is because our alternative hypothesis just says whether the sample mean is likely from a different distribution, not whether it is from a different distribution that has a smaller mean or a larger mean than the claimed population. In real life, if you have reason to believe the directionality of the difference, you may want to make a one-directional alternative hypothesis. In that case, you will do a one-tail test.
+
+Scenario: a cereal company claims its boxes contain 500g of cereal, i.e. the population mean $\mu = 500$, and the population standard deviation is $\sigma=15$. A consumer group suspects the boxes are systematically underfilled (not just different). Now, you sample 50 boxes and find a sample mean of $\bar X = 495g$. Can you use what you have learned to test the consumer group's suspicion?
+
+```{r}
+# calculate the z score
+se = 15/sqrt(50)
+z = (495 - 500)/se
+z
+```
+
+Let's say we still want to keep the significance level at 0.05.
+
+Let's go to a [z table](https://qcenter.uconn.edu/wp-content/uploads/sites/764/2018/05/Standard-Normal-Ztable.pdf).
+
+We find the probability corresponding to the z score of -2.36 is 0.0091, which is smaller than 0.05, the significance level. Therefore, we reject the null hypothesis and conclude that the cereal boxes are underfilled.
+
+#### Exercise 4
+
+Now, can you go back to exercise 3, but this time with a one-directional alternative hypothesis that the machine systematically produce bolts that are longer than the claimed length?
+
+```{r}
+# Is the machine miscalibrated such that it produces bolts that are systematically longer than the claimed length?
+
+```
+
+## Lesson Complete
+
+Congratulations! You have completed *Introduction to statistics using R 2.* There are one more lessons in *Intro to Stats using R:*
+
+-   [Introduction to statistics using R 3](./Intro_to_Stats-3)
+
+### Start Next Lesson: [Introduction to statistics using R 3](./Intro-to-Stats-3)
+
+### Exercise Solutions
+
+#### Exercise 1 solution
+
+```{r}
+# calculate the range 95% of the values falls into for the two normal distributions
+## first normal distribution whose mean is 0 and standard deviation is 0.5
+first_lower_end = 0 - 1.96 * 0.5
+first_higher_end = 0 + 1.96 * 0.5
+paste0("95% of the values falls into ", first_lower_end, " and ", first_higher_end)
+
+## second normal distribution whose mean is 0 and standard deviation is 2
+second_lower_end = 0 - 1.96 * 2
+second_higher_end = 0 + 1.96 * 2
+paste0("95% of the values falls into ", second_lower_end, " and ", second_higher_end)
+```
+
+#### Exercise 2 solution
+
+```{r}
+### Calculate the 95% CI for a dataset
+# Input the raw scores
+iq_scores <- c(87, 94, 105, 101, 85, 90, 115, 112, 93, 79, 82, 96, 86, 101, 76, 
+               114, 97, 103, 85, 106, 72, 108, 93, 88, 117, 90, 83, 94, 78, 110, 
+               95, 107, 89, 92, 104, 81, 98, 116, 80, 99, 91, 103, 74, 111, 84, 
+               102, 96, 77, 109, 95)
+
+# Check mean and standard deviation
+mean_iq <- mean(iq_scores) # mean value of the sample data
+sd_iq <- sd(iq_scores) # standard deviation of the sample data
+n <- length(iq_scores) # sample size
+se <- sd_iq / sqrt(n) # standar error
+
+# Calculate 95% confidence interval using z-distribution
+margin_error_z <- 1.96 * se
+ci_lower_z <- mean_iq - margin_error_z
+ci_upper_z <- mean_iq + margin_error_z
+
+# Print results
+cat("Sample size:", n, "\n")
+cat("Sample mean:", mean_iq, "\n")
+cat("Sample SD:", sd_iq, "\n")
+cat("Standard error:", se, "\n\n")
+
+cat("95% CI:", ci_lower_z, "to", ci_upper_z, "\n\n")
+```
+
+#### Exercise 3 solution
+
+```{r}
+# is the machine miscalibrated?
+se = 0.5/sqrt(50)
+z = (50.2-50)/se
+z
+```
+
+The z-score of the sample mean is bigger than 1.96. The machine is probably miscalibrated.
+
+#### Exercise 4 solution
+
+```{r}
+# is this machine miscalibrated such that it produces bolts that are systematically longer than the claimed length?
+se = 0.5/sqrt(50)
+z = (50.2-50)/se
+z
+```
+
+Let's go to the z table. We find that the probability corresponding to the z score of 2.83 is 0.9977. This means, the probability that the sample comes from the claimed population is 1 - 0.9977 = 0.0023 which is smaller than 0.05. Therefore, we reject the null hypothesis and conclude that the machine is miscalibrated and systematically produce bolts that are longer than the expected length of 50mm.
+
+## References
+
+Learning Statistics with R: <https://learningstatisticswithr.com/>
